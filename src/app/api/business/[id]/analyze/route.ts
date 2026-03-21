@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { AnalyzeResponse, Transaction, Category, RecurrencePattern } from "@/lib/types";
 import { CATEGORIES, RECURRENCE_PATTERNS } from "@/lib/types";
 import { notFound, serverError } from "@/lib/errors";
+import { computeForecast } from "@/lib/forecast";
 
 const BATCH_SIZE = 50;
 
@@ -33,6 +34,49 @@ interface GeminiCategorizationResult {
   category: string;
   is_recurring: boolean;
   recurrence_pattern: string | null;
+}
+
+async function recomputeRunway(
+  businessId: string,
+): Promise<{ runway_days: number; runway_severity: "red" | "amber" | "green" }> {
+  const { supabase } = await import("@/lib/supabase");
+
+  const [{ data: business, error: businessError }, { data: transactions, error: transactionsError }] =
+    await Promise.all([
+      supabase
+        .from("businesses")
+        .select("id, current_balance")
+        .eq("id", businessId)
+        .single(),
+      supabase.from("transactions").select("*").eq("business_id", businessId),
+    ]);
+
+  if (businessError || !business || transactionsError) {
+    throw new Error("RUNWAY_RECOMPUTE_FAILED");
+  }
+
+  const forecast = computeForecast(
+    (transactions ?? []) as Transaction[],
+    business.current_balance,
+    30,
+  );
+
+  const { error: updateError } = await supabase
+    .from("businesses")
+    .update({
+      runway_days: forecast.runwayDays,
+      runway_severity: forecast.runwaySeverity,
+    })
+    .eq("id", businessId);
+
+  if (updateError) {
+    throw new Error("RUNWAY_RECOMPUTE_FAILED");
+  }
+
+  return {
+    runway_days: forecast.runwayDays,
+    runway_severity: forecast.runwaySeverity,
+  };
 }
 
 export async function POST(
@@ -68,21 +112,23 @@ export async function POST(
   }
 
   if (!transactions || transactions.length === 0) {
-    // Nothing to categorize — return current state
-    const { data: biz } = await supabase
-      .from("businesses")
-      .select("runway_days, runway_severity")
-      .eq("id", businessId)
-      .single();
+    try {
+      const runway = await recomputeRunway(businessId);
 
-    return NextResponse.json<AnalyzeResponse>({
-      business_id: businessId,
-      transactions_categorized: 0,
-      runway_days: biz?.runway_days ?? 0,
-      runway_severity: biz?.runway_severity ?? "green",
-      alerts_created: [],
-      sms_sent: false,
-    });
+      return NextResponse.json<AnalyzeResponse>({
+        business_id: businessId,
+        transactions_categorized: 0,
+        runway_days: runway.runway_days,
+        runway_severity: runway.runway_severity,
+        alerts_created: [],
+        sms_sent: false,
+      });
+    } catch {
+      return serverError(
+        "Failed to recompute runway.",
+        "RUNWAY_RECOMPUTE_FAILED",
+      );
+    }
   }
 
   // Batch transactions and send to Gemini
@@ -152,15 +198,22 @@ export async function POST(
     }
   }
 
-  // TODO: D2-02/D2-03 will add forecast + runway calculation here
   // TODO: D4-02 through D4-05 will add alert scenario detection here
+  try {
+    const runway = await recomputeRunway(businessId);
 
-  return NextResponse.json<AnalyzeResponse>({
-    business_id: businessId,
-    transactions_categorized: categorized,
-    runway_days: 0,
-    runway_severity: "green",
-    alerts_created: [],
-    sms_sent: false,
-  });
+    return NextResponse.json<AnalyzeResponse>({
+      business_id: businessId,
+      transactions_categorized: categorized,
+      runway_days: runway.runway_days,
+      runway_severity: runway.runway_severity,
+      alerts_created: [],
+      sms_sent: false,
+    });
+  } catch {
+    return serverError(
+      "Failed to recompute runway.",
+      "RUNWAY_RECOMPUTE_FAILED",
+    );
+  }
 }

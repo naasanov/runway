@@ -67,6 +67,7 @@ const geminiResponse = JSON.stringify([
 
 // Track all supabase update calls for assertions
 const updateCalls: { id: string; data: Record<string, unknown> }[] = [];
+const businessUpdateCalls: Record<string, unknown>[] = [];
 
 // ─── Mock Supabase ───────────────────────────────────────────────────────────
 
@@ -79,22 +80,43 @@ jest.mock("@/lib/supabase", () => {
             select: jest.fn(() => ({
               eq: jest.fn(() => ({
                 single: jest.fn().mockResolvedValue({
-                  data: { id: "biz-test", runway_days: null, runway_severity: null },
+                  data: {
+                    id: "biz-test",
+                    current_balance: 5000,
+                    runway_days: null,
+                    runway_severity: null,
+                  },
                   error: null,
                 }),
               })),
+            })),
+            update: jest.fn((data: Record<string, unknown>) => ({
+              eq: jest.fn().mockImplementation(() => {
+                businessUpdateCalls.push(data);
+                return { error: null };
+              }),
             })),
           };
         }
         if (table === "transactions") {
           return {
             select: jest.fn(() => ({
-              eq: jest.fn(() => ({
-                is: jest.fn().mockResolvedValue({
-                  data: mockTransactions,
-                  error: null,
-                }),
-              })),
+              eq: jest.fn(() => {
+                const selectChain = {
+                  is: jest.fn().mockResolvedValue({
+                    data: mockTransactions,
+                    error: null,
+                  }),
+                };
+
+                return Object.assign(
+                  Promise.resolve({
+                    data: mockTransactions,
+                    error: null,
+                  }),
+                  selectChain,
+                );
+              }),
             })),
             update: jest.fn((data: Record<string, unknown>) => ({
               eq: jest.fn((field: string, value: string) => {
@@ -143,6 +165,7 @@ function callAnalyze(businessId = "biz-test") {
 describe("POST /api/business/:id/analyze — categorization", () => {
   beforeEach(() => {
     updateCalls.length = 0;
+    businessUpdateCalls.length = 0;
     mockGenerateContent.mockReset();
     mockGenerateContent.mockResolvedValue({
       response: { text: () => geminiResponse },
@@ -197,6 +220,17 @@ describe("POST /api/business/:id/analyze — categorization", () => {
       is_recurring: false,
       recurrence_pattern: null,
     });
+  });
+
+  it("persists recomputed runway metrics to the business record", async () => {
+    const res = await callAnalyze();
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(businessUpdateCalls).toHaveLength(1);
+    expect(businessUpdateCalls[0]).toHaveProperty("runway_days");
+    expect(businessUpdateCalls[0]).toHaveProperty("runway_severity");
+    expect(body.runway_severity).toBe(businessUpdateCalls[0].runway_severity);
   });
 
   it("validates categories against the known enum", async () => {

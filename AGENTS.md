@@ -1,6 +1,7 @@
 # Project Guidelines
 
 - Use `env.X` from `src/lib/env.ts` instead of `process.env.X`. Always add new env vars to the zod schema in `src/lib/env.ts`.
+- Before making substantial edits, verify the current git branch and re-scan the relevant files on that branch. Do not assume earlier route/test context still applies after a branch switch.
 - Reuse shared modules in `src/lib/` instead of reinitializing clients or redefining types:
   - `env.ts` — validated env vars (see above)
   - `supabase.ts` — Supabase client
@@ -11,4 +12,10 @@
   - `utils.ts` — `cn()` for Tailwind class merging
   - `types.ts` — shared domain types, constants, and API response interfaces
 - Use `date-fns` for date operations
+- Tests for this repo live in `src/__tests__/`. When searching for existing coverage or adding new API tests, use that directory first.
 - When adding or modifying API routes, always add or update corresponding tests in `src/__tests__/`. Mock external services (Supabase, Gemini, Azure SMS) — tests must run without real credentials. Follow the existing patterns in that directory (jest.mock factories, `makeRequest` helpers, testing validation + response shape + core logic separately).
+- Backend ticket done definition:
+  - Persist any newly derived fields if the ticket changes DB-backed state.
+  - Update the consuming route if another endpoint reads those fields.
+  - Add or update focused tests in `src/__tests__/`.
+  - Run the smallest relevant Jest slice first, then the full API suite if shared logic changed.
