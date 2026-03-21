@@ -9,7 +9,9 @@ export class ApiError extends Error {
   }
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
+import { env } from "./env";
+
+const BASE_URL = env.NEXT_PUBLIC_BASE_URL || "";
 
 async function request<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",

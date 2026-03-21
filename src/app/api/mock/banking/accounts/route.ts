@@ -1,34 +1,28 @@
 import { NextResponse } from "next/server";
 import type { MockBankingResponse } from "@/lib/types";
+import { generateBankingData } from "@/lib/seed-data";
 
-// TODO: implement — Dev 1 owns this
+// Dev 1 — D1-03: Returns current balance + transaction history including non-Stripe items.
+// next_payroll_due = today+8, next_insurance_due = today+7 (relative dates).
+// These future obligations combined with the unpaid Durham Catering invoice create
+// the payroll-miss scenario that fires the red alert.
 export async function GET(): Promise<NextResponse<MockBankingResponse>> {
+  const { account, transactions } = generateBankingData("mock_preview");
+
+  const withNullCategory = transactions.map((t) => ({
+    ...t,
+    category: null as null,
+  }));
+
+  // next_payroll_due and next_insurance_due are returned as top-level meta
+  // for the forecast engine (not in the MockBankingResponse account shape).
+  const { next_payroll_due, next_insurance_due, ...accountShape } = account;
+
   return NextResponse.json({
-    account: {
-      id: "acct-sgb-checking",
-      business_id: "biz-sweet-grace-001",
-      type: "checking",
-      current_balance: 4847.23,
-      as_of: "2026-03-21",
-    },
-    transactions: [
-      {
-        id: "txn-bank-00109",
-        business_id: "biz-sweet-grace-001",
-        source: "banking",
-        transaction_type: "debit",
-        invoice_status: null,
-        invoice_date: null,
-        customer_id: null,
-        amount: 1200.0,
-        description: "Quarterly Insurance Payment",
-        category: null,
-        date: "2026-03-28",
-        is_recurring: true,
-        recurrence_pattern: "quarterly",
-        tags: ["insurance"],
-      },
-    ],
-    count: 1,
-  });
+    account: accountShape,
+    transactions: withNullCategory,
+    count: withNullCategory.length,
+    // Expose future obligation dates for Dev 2 forecast engine
+    meta: { next_payroll_due, next_insurance_due },
+  } as MockBankingResponse & { meta: { next_payroll_due: string; next_insurance_due: string } });
 }

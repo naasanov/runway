@@ -1,3 +1,4 @@
+@import "tw-animate-css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -79,7 +80,8 @@
   }
 
   * {
-    @apply border-border;
+    border-color: var(--border);
+    outline-color: oklch(from var(--ring) l c h / 50%);
   }
 
   body {
