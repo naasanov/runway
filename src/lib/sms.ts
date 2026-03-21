@@ -1,6 +1,7 @@
 import { SmsClient } from "@azure/communication-sms";
+import { env } from "./env";
 
-const connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING!;
+const connectionString = env.AZURE_COMMUNICATION_CONNECTION_STRING;
 
 export const smsClient = new SmsClient(connectionString);
-export const SMS_FROM = process.env.AZURE_SMS_FROM_NUMBER!;
+export const SMS_FROM = env.AZURE_SMS_FROM_NUMBER;
