@@ -1,68 +1,36 @@
-# Secrets & environment variables
-.env
-.env.*
-!.env.template
-*.pem
-*.key
-*.cert
-*.p12
-*.pfx
-*.jks
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# API keys & credentials
-secrets.json
-credentials.json
-service-account*.json
-*-credentials.json
-*.secret
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
 
-# OS files
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
 .DS_Store
-Thumbs.db
+*.pem
 
-# IDE / editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Dependencies
-node_modules/
-vendor/
-.venv/
-venv/
-env/
-__pycache__/
-*.pyc
+# local env files
+.env*.local
 
-# Build output
-dist/
-build/
-out/
-*.o
-*.so
-*.dylib
+# vercel
+.vercel
 
-# Logs
-*.log
-logs/
-
-# Coverage & test artifacts
-coverage/
-.nyc_output/
-htmlcov/
-.pytest_cache/
-
-# Terraform / infrastructure secrets
-*.tfvars
-*.tfstate
-*.tfstate.backup
-
-# Docker
-.docker/
-docker-compose.override.yml
-
-# Misc
-*.bak
-*.tmp
+# typescript
+*.tsbuildinfo
+next-env.d.ts
