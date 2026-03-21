@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { ConnectResponse } from "@/lib/types";
 
 // TODO: implement — Dev 1 owns this
-export async function POST() {
+export async function POST(): Promise<NextResponse<ConnectResponse>> {
   return NextResponse.json(
     {
       business: {

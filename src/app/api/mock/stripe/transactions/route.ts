@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { MockStripeResponse } from "@/lib/types";
 
 // TODO: implement — Dev 1 owns this
-export async function GET() {
+export async function GET(): Promise<NextResponse<MockStripeResponse>> {
   return NextResponse.json({
     transactions: [
       {

@@ -115,6 +115,94 @@ export interface ScenarioItem {
   params: Record<string, number | string>;
 }
 
+// --- API Response types ---
+
+export interface MockStripeResponse {
+  transactions: Transaction[];
+  count: number;
+}
+
+export interface MockBankingResponse {
+  account: {
+    id: string;
+    business_id: string;
+    type: string;
+    current_balance: number;
+    as_of: string;
+  };
+  transactions: Transaction[];
+  count: number;
+}
+
+export interface ConnectResponse {
+  business: Business;
+  transactions_imported: number;
+}
+
+export interface AnalyzeResponse {
+  business_id: string;
+  transactions_categorized: number;
+  runway_days: number;
+  runway_severity: Severity;
+  alerts_created: {
+    id: string;
+    scenario: AlertScenario;
+    severity: Severity;
+    headline: string;
+  }[];
+  sms_sent: boolean;
+}
+
+export interface DashboardResponse {
+  business: Pick<Business, "id" | "name" | "current_balance" | "runway_days" | "runway_severity">;
+  alerts: Alert[];
+  forecast_summary: {
+    horizon_days: number;
+    min_projected_balance: number;
+    danger_dates: string[];
+    days: ForecastDay[];
+  };
+  upcoming_obligations: {
+    description: string;
+    amount: number;
+    due_date: string;
+    category: Category;
+    is_recurring: boolean;
+  }[];
+}
+
+export interface ForecastResponse {
+  business_id: string;
+  generated_at: string;
+  horizon_days: number;
+  current_balance: number;
+  avg_daily_net_burn: number;
+  runway_days: number;
+  first_negative_date: string | null;
+  days: ForecastDay[];
+}
+
+export interface AlertsResponse {
+  business_id: string;
+  alerts: Alert[];
+}
+
+export interface SendSmsResponse {
+  alert_id: string;
+  sms_sent: boolean;
+  sms_sent_at: string;
+  to: string;
+  message_preview: string;
+}
+
+export interface SendReminderResponse {
+  sent: boolean;
+  sent_at: string;
+  to: string;
+  subject: string;
+  message_preview: string;
+}
+
 export interface ScenarioResponse {
   business_id: string;
   baseline: {

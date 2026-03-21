@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { DashboardResponse } from "@/lib/types";
 
 // TODO: implement — Dev 2 owns this
-export async function GET() {
+export async function GET(): Promise<NextResponse<DashboardResponse>> {
   return NextResponse.json({
     business: {
       id: "biz-sweet-grace-001",
@@ -13,6 +14,7 @@ export async function GET() {
     alerts: [
       {
         id: "alert-0091",
+        business_id: "biz-sweet-grace-001",
         scenario: "runway",
         severity: "amber",
         headline: "You have 47 days of cash remaining at current burn rate.",
@@ -26,6 +28,9 @@ export async function GET() {
             impact: "Extends runway to 78 days",
           },
         ],
+        sms_sent: false,
+        sms_sent_at: null,
+        created_at: "2026-03-21T02:00:00Z",
       },
     ],
     forecast_summary: {

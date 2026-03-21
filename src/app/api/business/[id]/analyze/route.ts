@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { AnalyzeResponse } from "@/lib/types";
 
 // TODO: implement — Dev 2 owns this
-export async function POST() {
+export async function POST(): Promise<NextResponse<AnalyzeResponse>> {
   return NextResponse.json({
     business_id: "biz-sweet-grace-001",
     transactions_categorized: 400,

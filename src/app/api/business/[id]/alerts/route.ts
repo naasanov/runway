@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
+import type { AlertsResponse } from "@/lib/types";
 
 // TODO: implement — Dev 4 owns this
-export async function GET() {
+export async function GET(): Promise<NextResponse<AlertsResponse>> {
   return NextResponse.json({
     business_id: "biz-sweet-grace-001",
     alerts: [
       {
         id: "alert-0092",
+        business_id: "biz-sweet-grace-001",
         scenario: "overdue_invoice",
         severity: "red",
         headline: "Durham Catering Co owes $3,200 and is 12 days overdue.",

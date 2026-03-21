@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { SendReminderResponse } from "@/lib/types";
 
 // TODO: implement — Dev 4 owns this
-export async function POST() {
+export async function POST(): Promise<NextResponse<SendReminderResponse>> {
   return NextResponse.json({
     sent: true,
     sent_at: "2026-03-21T18:32:00Z",

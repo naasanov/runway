@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { ForecastResponse } from "@/lib/types";
 
 // TODO: implement — Dev 2 owns this
-export async function GET() {
+export async function GET(): Promise<NextResponse<ForecastResponse>> {
   return NextResponse.json({
     business_id: "biz-sweet-grace-001",
     generated_at: "2026-03-21T18:00:00Z",

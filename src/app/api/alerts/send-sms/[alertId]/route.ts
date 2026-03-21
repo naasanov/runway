@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { SendSmsResponse } from "@/lib/types";
 
 // TODO: implement — Dev 4 owns this
-export async function POST() {
+export async function POST(): Promise<NextResponse<SendSmsResponse>> {
   return NextResponse.json({
     alert_id: "alert-0092",
     sms_sent: true,
