@@ -1,3 +1,14 @@
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public status: number
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
 
 async function request<T>(
@@ -12,8 +23,8 @@ async function request<T>(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(error.error || `Request failed: ${res.status}`);
+    const err = await res.json().catch(() => ({ error: res.statusText, code: "UNKNOWN" }));
+    throw new ApiError(err.error || `Request failed: ${res.status}`, err.code || "UNKNOWN", res.status);
   }
 
   return res.json() as Promise<T>;
