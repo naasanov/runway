@@ -5,6 +5,7 @@
  */
 
 import type { Transaction } from "./types";
+import { randomUUID } from "crypto";
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -34,9 +35,8 @@ function subMonths(date: Date, n: number): Date {
   return d;
 }
 
-let txnCounter = 1;
 function nextId(prefix: string): string {
-  return `${prefix}-${String(txnCounter++).padStart(5, "0")}`;
+  return `${prefix}-${randomUUID()}`;
 }
 
 // ─── Stripe Transactions ───────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export function generateStripeTransactions(
 
   // ── The critical unpaid invoice: $3,200, 12 days overdue ─────────────────────
   txns.push({
-    id: "txn-00482", // stable ID for easy reference
+    id: nextId("txn-dc-unpaid"),
     business_id: businessId,
     source: "stripe",
     transaction_type: "invoice",
