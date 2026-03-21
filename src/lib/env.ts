@@ -25,24 +25,6 @@ export const env = new Proxy({} as Env, {
       );
     }
 
-    // Backward compatibility: allow legacy Supabase key naming used in some setups.
-    if (prop === "SUPABASE_SERVICE_ROLE_KEY") {
-      const resolvedKey =
-        process.env.SUPABASE_SERVICE_ROLE_KEY ??
-        process.env.NEXT_PUBLIC_SUPABASE_SECRET_KEY;
-      const result = shape.SUPABASE_SERVICE_ROLE_KEY.safeParse(resolvedKey);
-
-      if (!result.success) {
-        const issue = result.error.issues[0];
-        throw new Error(
-          `\n\nMissing or invalid environment variable "${prop}": ${issue.message}\n\nSet SUPABASE_SERVICE_ROLE_KEY in .env.local (preferred).\nIf your project still uses NEXT_PUBLIC_SUPABASE_SECRET_KEY, this code will also accept it as a fallback.\n`
-        );
-      }
-
-      cache.set(prop, result.data);
-      return result.data;
-    }
-
     const fieldSchema = shape[prop as keyof typeof shape];
     const result = fieldSchema.safeParse(process.env[prop]);
 
