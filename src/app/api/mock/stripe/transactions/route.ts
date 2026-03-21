@@ -1,27 +1,21 @@
 import { NextResponse } from "next/server";
 import type { MockStripeResponse } from "@/lib/types";
+import { generateStripeTransactions } from "@/lib/seed-data";
 
-// TODO: implement — Dev 1 owns this
+// Dev 1 — D1-02: Returns 90 days of realistic Stripe-formatted bakery transactions.
+// All dates are relative to today so the "9-days-to-payroll-miss" story is always accurate.
+// category is null on all items — populated by /analyze after Gemini categorization.
 export async function GET(): Promise<NextResponse<MockStripeResponse>> {
+  const transactions = generateStripeTransactions("mock_preview");
+
+  // Strip category so the mock mirrors real Stripe (uncategorized)
+  const withNullCategory = transactions.map((t) => ({
+    ...t,
+    category: null as null,
+  }));
+
   return NextResponse.json({
-    transactions: [
-      {
-        id: "txn-00482",
-        business_id: "biz-sweet-grace-001",
-        source: "stripe",
-        transaction_type: "invoice",
-        invoice_status: "unpaid",
-        invoice_date: "2026-03-09",
-        customer_id: "cust-durham-catering",
-        amount: 3200.0,
-        description: "Durham Catering Co — Invoice #1021",
-        category: null,
-        date: "2026-03-09",
-        is_recurring: false,
-        recurrence_pattern: null,
-        tags: ["catering", "wholesale"],
-      },
-    ],
-    count: 1,
+    transactions: withNullCategory,
+    count: withNullCategory.length,
   });
 }
