@@ -1,0 +1,68 @@
+# Secrets & environment variables
+.env
+.env.*
+!.env.template
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+*.jks
+
+# API keys & credentials
+secrets.json
+credentials.json
+service-account*.json
+*-credentials.json
+*.secret
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Build output
+dist/
+build/
+out/
+*.o
+*.so
+*.dylib
+
+# Logs
+*.log
+logs/
+
+# Coverage & test artifacts
+coverage/
+.nyc_output/
+htmlcov/
+.pytest_cache/
+
+# Terraform / infrastructure secrets
+*.tfvars
+*.tfstate
+*.tfstate.backup
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Misc
+*.bak
+*.tmp
