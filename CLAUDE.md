@@ -10,4 +10,5 @@
   - `errors.ts` — API error response helpers (`badRequest`, `notFound`, `serverError`)
   - `utils.ts` — `cn()` for Tailwind class merging
   - `types.ts` — shared domain types, constants, and API response interfaces
-- Use `date-fns` for date operations 
+- Use `date-fns` for date operations
+- When adding or modifying API routes, always add or update corresponding tests in `src/__tests__/`. Mock external services (Supabase, Gemini, Azure SMS) — tests must run without real credentials. Follow the existing patterns in that directory (jest.mock factories, `makeRequest` helpers, testing validation + response shape + core logic separately).

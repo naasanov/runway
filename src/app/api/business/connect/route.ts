@@ -62,10 +62,18 @@ export async function POST(
   // ── Generate and insert seed transactions ─────────────────────────────────
   const { allTxns, account } = generateAllTransactions(businessId);
 
+  // Strip categorization fields — these get populated by /analyze (Gemini AI)
+  const uncategorized = allTxns.map((t) => ({
+    ...t,
+    category: null,
+    is_recurring: false,
+    recurrence_pattern: null,
+  }));
+
   // Supabase insert limit is ~1000 rows; chunk in batches of 500 to be safe
   const CHUNK = 500;
-  for (let i = 0; i < allTxns.length; i += CHUNK) {
-    const chunk = allTxns.slice(i, i + CHUNK);
+  for (let i = 0; i < uncategorized.length; i += CHUNK) {
+    const chunk = uncategorized.slice(i, i + CHUNK);
     const { error: txnErr } = await supabase.from("transactions").insert(chunk);
     if (txnErr) {
       console.error("Transaction insert failed:", txnErr);
@@ -97,7 +105,7 @@ export async function POST(
   return NextResponse.json(
     {
       business: updated ?? business,
-      transactions_imported: allTxns.length,
+      transactions_imported: uncategorized.length,
     },
     { status: 201 }
   );
