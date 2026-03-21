@@ -19,7 +19,11 @@ export const env = new Proxy({} as Env, {
   get(_target, prop: string) {
     if (cache.has(prop)) return cache.get(prop);
 
-    if (!(prop in shape)) return undefined;
+    if (!(prop in shape)) {
+      throw new Error(
+        `\n\nUnknown environment variable "${prop}". Add it to the schema in src/lib/env.ts first.\n`
+      );
+    }
 
     const fieldSchema = shape[prop as keyof typeof shape];
     const result = fieldSchema.safeParse(process.env[prop]);
