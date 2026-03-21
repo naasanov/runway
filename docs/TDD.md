@@ -197,7 +197,7 @@ One-click button on the overdue invoice alert that "sends" (mock) a payment remi
 | AI / LLM | Gemini API (gemini-2.0-flash for transaction analysis + alert generation) |
 | Database | PostgreSQL (Supabase — free tier) |
 | SMS Alerts | Twilio API (trial account — verified numbers only) |
-| Auth | Clerk (free tier) — minimal, just for demo login |
+| Auth | Auth0 (free tier) — minimal, just for demo login |
 | Mock APIs | Next.js API routes serving seeded JSON data |
 | Hosting | Vercel |
 

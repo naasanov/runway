@@ -159,7 +159,7 @@
 
 - Initialize Next.js 14 with Tailwind CSS + shadcn/ui
 - Push to repo, confirm Vercel auto-deploys on merge to main
-- Add Clerk auth — minimal config, just enough for a demo login
+- Add Auth0 — minimal config, just enough for a demo login
 - **Done when:** Live URL is up and accessible
 
 ### TICKET D3-02: Dashboard Layout + Runway Counter
