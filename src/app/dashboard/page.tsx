@@ -1,8 +1,11 @@
-import { Nav } from "@/components/nav";
-import { AlertTriangle, TrendingDown, Calendar, Zap } from "lucide-react";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { TopBar } from "@/components/dashboard/top-bar";
+import { RunwayHero } from "@/components/dashboard/runway-hero";
+import { CashForecast } from "@/components/dashboard/cash-forecast";
+import { AlertsPanel } from "@/components/dashboard/alerts-panel";
+import { ObligationsTable } from "@/components/dashboard/obligations-table";
 
 export default function DashboardPage() {
-  // businessId will be read from searchParams when wired up
   return (
     <div className="min-h-screen bg-background pb-mobile-nav">
       <Nav businessId="sweet-grace-bakery" />
@@ -189,56 +192,3 @@ function AlertCard({
     </div>
   );
 }
-
-const UPCOMING = [
-  { label: "Payroll", date: "Mar 28", amount: 3800, danger: true },
-  { label: "Insurance (quarterly)", date: "Mar 28", amount: 1200, danger: true },
-  { label: "Rent", date: "Apr 1", amount: 2400, danger: false },
-  { label: "King Arthur Flour", date: "Apr 3", amount: 1600, danger: false },
-  { label: "Packaging", date: "Apr 5", amount: 400, danger: false },
-];
-
-const ALERTS = [
-  {
-    severity: "red" as const,
-    headline: "Runway: 9 days",
-    detail:
-      "At current burn rate, projected balance goes negative on Mar 28. Payroll + insurance + rent hit the same week.",
-  },
-  {
-    severity: "red" as const,
-    headline: "Overdue invoice: $3,200",
-    detail:
-      "Durham Catering owes $3,200 — 12 days overdue. Collecting this resolves the shortfall.",
-  },
-  {
-    severity: "amber" as const,
-    headline: "Subscription waste: $134/mo",
-    detail:
-      "You're paying for Acuity ($89) and Calendly ($45) — both scheduling tools. Cancel one, save $1,068/year.",
-  },
-  {
-    severity: "amber" as const,
-    headline: "Revenue concentration: 68%",
-    detail:
-      "Durham Catering accounts for 68% of revenue in the last 90 days. High churn risk if this client leaves.",
-  },
-];
-
-const ACTIONS = [
-  {
-    action: "Collect $3,200 from Durham Catering — invoice is 12 days overdue",
-    impact: "Resolves the Mar 28 shortfall entirely",
-    cta: "Send reminder",
-  },
-  {
-    action: "Cancel Calendly ($45/mo) — you already pay for Acuity",
-    impact: "Saves $540/year with no functionality loss",
-    cta: undefined,
-  },
-  {
-    action: "Delay King Arthur Flour order by 5 days",
-    impact: "Supplier allows Net 30 — you've been paying Net 15. Saves $1,600 cash buffer this cycle.",
-    cta: undefined,
-  },
-];
