@@ -52,14 +52,14 @@ describe('POST /api/alerts/call', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({ success: true });
-    expect(mockAlertCall).toHaveBeenCalledWith('Cash runway is critically low', undefined);
+    expect(mockAlertCall).toHaveBeenCalledWith('Cash runway is critically low', undefined, undefined);
   });
 
-  it('forwards optional toNumber to alertCall', async () => {
+  it('forwards optional toNumber and voiceId to alertCall', async () => {
     mockAlertCall.mockResolvedValueOnce(undefined);
-    const req = makeRequest({ message: 'Test alert', toNumber: '+15550009999' });
+    const req = makeRequest({ message: 'Test alert', toNumber: '+15550009999', voiceId: 'voice-123' });
     await POST(req as never);
-    expect(mockAlertCall).toHaveBeenCalledWith('Test alert', '+15550009999');
+    expect(mockAlertCall).toHaveBeenCalledWith('Test alert', '+15550009999', 'voice-123');
   });
 
   it('returns 500 CALL_FAILED when alertCall throws', async () => {
