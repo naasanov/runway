@@ -224,6 +224,11 @@ describe("ConnectPage", () => {
 
     fireEvent.click(screen.getByText("Connect Stripe"));
 
+    // Advance past the 750ms launch animation delay before handleConnect fires.
+    await act(async () => {
+      jest.advanceTimersByTime(750);
+    });
+
     expect(await screen.findByText("ADP Payroll")).not.toBeNull();
     expect(screen.getAllByText("categorizing")).toHaveLength(2);
 
@@ -248,14 +253,14 @@ describe("ConnectPage", () => {
     expect(screen.getByText("ADP Payroll")).not.toBeNull();
     expect(screen.getByText("payroll")).not.toBeNull();
     expect(screen.queryByText("View dashboard →")).toBeNull();
-    expect(screen.queryByText(/Import complete — 229 live items loaded/i)).toBeNull();
+    expect(screen.queryByText(/import complete — 229/i)).toBeNull();
 
     await act(async () => {
-      jest.advanceTimersByTime(200);
+      jest.advanceTimersByTime(2000);
     });
 
     expect(
-      await screen.findByText(/Import complete — 229 live items loaded/i),
+      await screen.findByText(/import complete — 229/i),
     ).not.toBeNull();
     expect(screen.getByText("View dashboard →")).not.toBeNull();
   });
@@ -278,6 +283,11 @@ describe("ConnectPage", () => {
     render(React.createElement(ConnectPage));
 
     fireEvent.click(screen.getByText("Connect Stripe"));
+
+    // Advance past the 750ms launch animation delay before handleConnect fires.
+    await act(async () => {
+      jest.advanceTimersByTime(750);
+    });
 
     await act(async () => {
       jest.advanceTimersByTime(20);

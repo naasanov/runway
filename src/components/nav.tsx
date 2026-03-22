@@ -1,5 +1,6 @@
+import { RunwayLogoIcon } from "@/components/runway-logo";
 import Link from "next/link";
-import { Plane, LayoutDashboard, Bell, Sliders } from "lucide-react";
+import { Bell, LayoutDashboard, Sliders } from "lucide-react";
 
 export function Nav({ businessId }: { businessId?: string }) {
   return (
@@ -8,7 +9,7 @@ export function Nav({ businessId }: { businessId?: string }) {
       <nav className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-semibold text-foreground min-h-[44px] px-2 -ml-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <Plane className="size-4" />
+            <RunwayLogoIcon className="size-8" />
             Runway
           </Link>
 

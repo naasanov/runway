@@ -192,6 +192,18 @@
   animation: subtlePulse 2.5s ease-in-out infinite;
 }
 
+/* Circuit pulse handled via SVG SMIL radial gradient animation */
+
+@keyframes logoLaunch {
+  0%   { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
+  30%  { opacity: 1; transform: translate(4px, -4px) scale(1.15) rotate(-8deg); }
+  100% { opacity: 0; transform: translate(80px, -80px) scale(0.3) rotate(-20deg); }
+}
+
+.animate-logo-launch {
+  animation: logoLaunch 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* Stagger delays for card entrance */
 .stagger-1 {
   animation-delay: 0.06s;

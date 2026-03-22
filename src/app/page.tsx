@@ -1,5 +1,8 @@
+import { ConnectCTA } from "@/components/connect-cta";
 import Link from "next/link";
-import { Plane, TrendingDown, Bell, Zap, ArrowRight } from "lucide-react";
+import React from "react";
+import { TrendingDown, Bell, Zap, ArrowRight } from "lucide-react";
+import { RunwayLogoIcon } from "@/components/runway-logo";
 
 const GREEN = "#166534";
 
@@ -10,7 +13,7 @@ export default function LandingPage() {
       <nav className="border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 font-semibold tracking-tight">
-            <Plane className="size-4" style={{ color: GREEN }} />
+            <RunwayLogoIcon className="size-8" style={{ color: GREEN }} />
             <span style={{ color: GREEN }}>Runway</span>
           </div>
           <Link
@@ -46,14 +49,11 @@ export default function LandingPage() {
 
             {/* Right: CTAs stacked */}
             <div className="flex flex-row lg:flex-col gap-3 lg:items-stretch shrink-0">
-              <Link
-                href="/connect"
+              <ConnectCTA
+                label="Connect your Stripe"
                 className="inline-flex items-center justify-between gap-4 px-6 py-4 text-white font-semibold hover:opacity-90 transition-opacity text-sm whitespace-nowrap"
                 style={{ backgroundColor: GREEN }}
-              >
-                Connect your Stripe
-                <ArrowRight className="size-4 shrink-0" />
-              </Link>
+              />
               <Link
                 href="/connect"
                 className="inline-flex items-center justify-center px-6 py-4 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm whitespace-nowrap"
@@ -204,7 +204,7 @@ function FeatureCell({
   last,
   accent,
 }: {
-  icon: ReturnType<typeof Plane>;
+  icon: React.ReactNode;
   title: string;
   body: string;
   last?: boolean;

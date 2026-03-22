@@ -7,6 +7,8 @@ import type {
   ConnectResponse,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { CircuitBackground } from "@/components/circuit-background";
+import { RunwayLogoIcon } from "@/components/runway-logo";
 import { Building2, CreditCard, Loader2, Plane, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -74,16 +76,16 @@ function upsertTransactions(
 function categoryBadgeClass(
   category: AnalyzeStreamTransaction["category"]
 ): string {
-  if (category === null) return "bg-slate-100 text-slate-500";
-  if (category === "revenue") return "bg-green-100 text-green-700";
-  if (category === "payroll") return "bg-red-100 text-red-700";
+  if (category === null) return "border border-border text-muted-foreground";
+  if (category === "revenue") return "border border-green-600/30 text-green-700";
+  if (category === "payroll") return "border border-red-500/30 text-red-600";
   if (category === "rent" || category === "insurance") {
-    return "bg-amber-100 text-amber-700";
+    return "border border-amber-400/30 text-amber-700";
   }
   if (category === "subscriptions" || category === "supplies") {
-    return "bg-blue-100 text-blue-700";
+    return "border border-border text-muted-foreground";
   }
-  return "bg-slate-100 text-slate-700";
+  return "border border-border text-muted-foreground";
 }
 
 function formatRecurrence(
@@ -106,6 +108,7 @@ export default function ConnectPage() {
   const completionHandledRef = useRef(false);
 
   const [step, setStep] = useState<ConnectStep>("idle");
+  const [launching, setLaunching] = useState(false);
   const [business, setBusiness] = useState<ConnectResponse["business"] | null>(
     null
   );
@@ -270,6 +273,12 @@ export default function ConnectPage() {
     );
   }
 
+  function handleStripeClick() {
+    if (launching) return;
+    setLaunching(true);
+    setTimeout(() => void handleConnect(), 750);
+  }
+
   async function handleConnect() {
     try {
       resetStreamState();
@@ -363,58 +372,66 @@ export default function ConnectPage() {
   }
 
   return (
-    <div className="h-dvh overflow-hidden bg-background flex flex-col">
-      <nav className="border-b border-border">
+    <div className="h-dvh overflow-hidden bg-background flex flex-col relative">
+      <CircuitBackground step={step} />
+      <nav className="border-b border-border relative z-10">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-2 font-semibold">
           <Link href="/" className="flex items-center gap-2">
-            <Plane className="size-4" />
+            <RunwayLogoIcon className="size-8" />
             Runway
           </Link>
         </div>
       </nav>
 
-      <main className="flex-1 min-h-0 overflow-hidden px-4 py-4 sm:px-6 sm:py-6">
+      <main className="flex-1 min-h-0 overflow-hidden px-4 py-4 sm:px-6 sm:py-6 relative z-10">
         <div className="mx-auto flex h-full w-full max-w-xl items-center overflow-hidden">
           {step === "idle" && (
-            <div className="w-full text-center">
-              <div className="size-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
-                <Building2 className="size-6 text-foreground" />
-              </div>
-              <h1 className="text-2xl font-bold mb-2">
+            <div className="w-full bg-background">
+              <p className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-5">
+                {"// connect_business"}
+              </p>
+              <h1 className="text-2xl font-bold tracking-tight mb-2">
                 Connect {DEFAULT_BUSINESS.business_name}
               </h1>
-              <p className="text-muted-foreground text-sm mb-8 max-w-sm mx-auto">
-                We&apos;ll import your seeded demo business, then categorize
-                your transactions and surface what needs attention.
+              <p className="text-muted-foreground text-sm mb-8 max-w-sm leading-relaxed">
+                We&apos;ll import your transaction history, categorize
+                your activity, and surface what needs attention.
               </p>
 
-              <div className="flex flex-col gap-3 mb-6">
+              <div className="flex flex-col mb-6 border border-border divide-y divide-border">
                 <button
-                  onClick={handleConnect}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border border-border bg-card hover:bg-muted transition-colors text-left"
+                  onClick={handleStripeClick}
+                  className="w-full flex items-center gap-3 px-5 py-4 bg-background hover:bg-muted transition-colors text-left"
                 >
-                  <div className="size-9 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                    <CreditCard className="size-4 text-violet-600" />
+                  <div className="size-8 border border-border flex items-center justify-center shrink-0">
+                    <CreditCard className="size-4 text-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm">Connect Stripe</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-semibold text-sm">Connect Stripe</p>
+                    <p className="text-xs text-muted-foreground font-mono">
                       Import transaction history
                     </p>
                   </div>
-                  <Zap className="size-4 text-muted-foreground ml-auto" />
+                  <div className="ml-auto relative size-6">
+                    <Zap
+                      className={`size-6 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                    />
+                    <RunwayLogoIcon
+                      className={`size-6 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
+                    />
+                  </div>
                 </button>
 
                 <button
                   onClick={handleConnect}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border border-border bg-card hover:bg-muted transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-5 py-4 bg-background hover:bg-muted transition-colors text-left"
                 >
-                  <div className="size-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                    <Building2 className="size-4 text-green-700" />
+                  <div className="size-8 border border-border flex items-center justify-center shrink-0">
+                    <Building2 className="size-4 text-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm">Connect Bank Account</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-semibold text-sm">Connect Bank Account</p>
+                    <p className="text-xs text-muted-foreground font-mono">
                       Add your latest cash activity
                     </p>
                   </div>
@@ -422,44 +439,43 @@ export default function ConnectPage() {
                 </button>
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-red-600 font-mono">{error}</p>}
             </div>
           )}
 
           {(step === "connecting" ||
             step === "analyzing" ||
             step === "done") && (
-            <div className="flex h-full w-full flex-col overflow-hidden">
+            <div className="flex h-full w-full flex-col overflow-hidden bg-background">
               <div className="flex items-center gap-2 mb-1">
                 <div
-                  className={`size-2 rounded-full ${
+                  className={`size-2 rounded-full shrink-0 ${
                     step === "done"
                       ? "bg-green-500"
                       : "bg-amber-400 animate-pulse"
                   }`}
                 />
-                <p className="text-sm font-medium">
+                <p className="text-xs font-mono font-semibold uppercase tracking-[0.1em] text-foreground">
                   {step === "done"
-                    ? `Import complete — ${importedCount} live items loaded`
+                    ? `import complete — ${importedCount} items`
                     : step === "connecting"
-                      ? "Connecting sources…"
-                      : "Categorizing transactions…"}
+                      ? "connecting sources…"
+                      : "categorizing transactions…"}
                 </p>
               </div>
-              <p className="mb-4 pl-4 text-xs text-muted-foreground">
+              <p className="mb-4 pl-4 text-xs text-muted-foreground font-mono">
                 {business
-                  ? `Stripe + banking connected for ${business.name}`
-                  : "Connecting demo business"}
+                  ? `${business.name} · stripe + banking`
+                  : "connecting business"}
               </p>
 
-              <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border bg-muted/50">
+              <div className="flex min-h-0 w-full flex-1 flex-col border border-border bg-background overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium">Transactions</p>
-                      <p className="text-xs text-muted-foreground">
-                        Recent transactions appear here as they&apos;re
-                        categorized.
+                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">Transactions</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                        Appear here as they&apos;re categorized.
                       </p>
                     </div>
                     {(step === "connecting" || step === "analyzing") && (
@@ -478,10 +494,9 @@ export default function ConnectPage() {
                 <div className="runway-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 space-y-2 sm:p-4">
                   {visibleTransactions.length === 0 &&
                     (step === "connecting" || step === "analyzing") && (
-                      <div className="animate-settle-in rounded-xl border border-dashed border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground flex items-center gap-3">
-                        <Loader2 className="size-4 animate-spin" />
-                        Your transactions are being categorized. The first ones
-                        will appear here shortly.
+                      <div className="animate-settle-in border border-dashed border-border px-4 py-6 text-sm text-muted-foreground flex items-center gap-3 font-mono">
+                        <Loader2 className="size-4 animate-spin shrink-0" />
+                        Categorizing your transactions — first items appear shortly.
                       </div>
                     )}
 
@@ -492,9 +507,9 @@ export default function ConnectPage() {
                       <div
                         key={transaction.id}
                         className={cn(
-                          "rounded-xl border border-border bg-background px-3 py-2 transition-[transform,box-shadow,border-color,background-color] duration-500 ease-out",
+                          "border border-border bg-background px-3 py-2 transition-[transform,box-shadow,border-color,background-color] duration-500 ease-out",
                           animatedTransactionIds.includes(transaction.id) &&
-                            "animate-settle-in animate-soft-highlight border-slate-300/70"
+                            "animate-settle-in animate-soft-highlight border-border/80"
                         )}
                       >
                         <div className="flex min-w-0 items-center gap-2 text-xs sm:text-sm">
@@ -523,14 +538,14 @@ export default function ConnectPage() {
                               </span>
                             )}
                             {transaction.category === null ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500 transition-colors duration-500 ease-out">
+                              <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors duration-500 ease-out">
                                 <Loader2 className="size-3 animate-spin" />
                                 categorizing
                               </span>
                             ) : (
                               <span
                                 className={cn(
-                                  "inline-flex rounded-full px-2 py-1 text-[11px] font-medium transition-colors duration-500 ease-out",
+                                  "inline-flex px-1.5 py-0.5 text-[10px] font-mono transition-colors duration-500 ease-out",
                                   categoryBadgeClass(transaction.category)
                                 )}
                               >
@@ -546,13 +561,15 @@ export default function ConnectPage() {
               </div>
 
               {warning && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                  <strong>Heads up:</strong> {warning}
+                <div className="mt-4 border border-l-4 border-amber-400/40 border-l-amber-400 p-4 text-sm text-amber-700">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-amber-600 block mb-1">heads_up</span>
+                  {warning}
                 </div>
               )}
 
               {error && (
-                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <div className="mt-4 border border-l-4 border-red-500/30 border-l-red-500 p-4 text-sm text-red-600">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-red-500 block mb-1">error</span>
                   {error}
                 </div>
               )}
@@ -561,7 +578,7 @@ export default function ConnectPage() {
                 <div className="mt-4">
                   <button
                     onClick={handleContinue}
-                    className="w-full py-3 rounded-xl bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors"
+                    className="w-full py-3 bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors"
                   >
                     View dashboard →
                   </button>
