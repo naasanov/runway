@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { getSession } from "@/lib/session";
-import { env } from "@/lib/env";
 import { serverError } from "@/lib/errors";
 
 /**
  * GET /api/auth/me
  *
- * Returns the current user's profile including data from Auth0 user_metadata
- * (name, business_name, phone set at signup).
+ * Returns the current user's profile. Phone and businessName are read from
+ * cookies set at signup. The user's name comes from the JWT id_token.
  *
  * Responses:
  *   200  { name, businessName, phone }
@@ -29,57 +29,17 @@ export async function GET() {
     );
   }
 
-  // Fallback: derive phone from the synthetic email ({digits}@runway.app)
+  const cookieStore = await cookies();
+
+  // Phone: from cookie (set at signup), or derived from email ({digits}@runway.app)
+  const phoneCookie = cookieStore.get("runway_phone")?.value;
   const digits = session.email.split("@")[0];
-  let phone = `+${digits}`;
-  let businessName: string | null = null;
-  let name = session.name ?? null;
+  const phone = phoneCookie || `+${digits}`;
 
-  // Fetch full profile from Auth0 Management API for user_metadata
-  try {
-    console.log("[me] fetching Auth0 management token...");
-    const tokenRes = await fetch(`https://${env.AUTH0_DOMAIN}/oauth/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "client_credentials",
-        client_id: env.AUTH0_CLIENT_ID,
-        client_secret: env.AUTH0_CLIENT_SECRET,
-        audience: `https://${env.AUTH0_DOMAIN}/api/v2/`,
-      }),
-    });
+  // Business name: from cookie (set at signup)
+  const businessName = cookieStore.get("runway_business_name")?.value ?? null;
 
-    if (!tokenRes.ok) {
-      const errBody = await tokenRes.text();
-      console.error("[me] Auth0 token request failed:", tokenRes.status, errBody);
-    } else {
-      const { access_token } = (await tokenRes.json()) as { access_token: string };
-      console.log("[me] got management token, fetching user:", session.sub);
-
-      const userRes = await fetch(
-        `https://${env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(session.sub)}`,
-        { headers: { Authorization: `Bearer ${access_token}` } }
-      );
-
-      if (!userRes.ok) {
-        const errBody = await userRes.text();
-        console.error("[me] Auth0 user fetch failed:", userRes.status, errBody);
-      } else {
-        const user = (await userRes.json()) as {
-          name?: string;
-          user_metadata?: { name?: string; business_name?: string; phone?: string };
-        };
-        console.log("[me] Auth0 user_metadata:", JSON.stringify(user.user_metadata));
-        console.log("[me] Auth0 user name:", user.name);
-        const meta = user.user_metadata;
-        if (meta?.phone) phone = meta.phone;
-        if (meta?.business_name) businessName = meta.business_name;
-        if (meta?.name) name = meta.name;
-      }
-    }
-  } catch (err) {
-    console.error("[me] Auth0 Management API error:", err);
-  }
+  const name = session.name ?? null;
 
   return NextResponse.json({ name, businessName, phone });
 }

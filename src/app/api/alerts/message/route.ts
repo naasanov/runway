@@ -1,25 +1,18 @@
 import { NextResponse } from 'next/server';
-
-// TODO: Implement dynamic message generation based on financial data nick nick nick
-/** Generate the alert call message. Shared by the route and scheduled-call. */
-export async function getAlertMessage(): Promise<string> {
-  return (
-    'Your business cash runway needs attention. ' +
-    'Please log in to your Runway dashboard to review your latest financial alerts.'
-  );
-}
+import { getAlertMessage } from '@/lib/alert-message';
 
 /**
  * GET /api/alerts/message
  *
- * Returns the message to be spoken during an alert call.
- * Currently returns a static string — will eventually generate a dynamic
- * message based on the business's current financial state.
+ * Returns the message to be spoken during an alert call, and a sentiment
+ * classification used to select the appropriate voice.
+ * Currently hardcoded — will use Gemini to generate both dynamically.
  *
  * Responses:
- *   200  { message: string }
+ *   200  { message: string, sentiment: "light" | "medium" | "heavy" }
  */
 export async function GET() {
-  const message = await getAlertMessage();
-  return NextResponse.json({ message });
+  // BIG BIG TODO: Replace with Gemini-generated message + sentiment based on financial data
+  const result = await getAlertMessage();
+  return NextResponse.json(result);
 }

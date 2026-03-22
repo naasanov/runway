@@ -56,5 +56,12 @@ export async function POST(req: NextRequest) {
 
   const response = NextResponse.json({ redirect: "/connect" }, { status: 200 });
   setSessionCookie(response, tokens.id_token);
+  response.cookies.set("runway_phone", normalizedPhone, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7,
+    path: "/",
+  });
   return response;
 }
