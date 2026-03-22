@@ -498,7 +498,7 @@ export default function ConnectPage() {
                     "transition-all duration-200",
                     isSupportedDemoStripeAccount(stripeId)
                       ? "blur-0"
-                      : "blur-[3px]"
+                      : "blur-[2px]"
                   )}
                 >
                   {selectedDemoBusinessName}
