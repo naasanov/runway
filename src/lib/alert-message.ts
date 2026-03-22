@@ -1,5 +1,6 @@
 import { format, parseISO } from "date-fns";
 import type { Alert, DashboardResponse } from "@/lib/types";
+import { formatRunwayDaysPhrase } from "@/lib/runway-display";
 
 export interface AlertMessageResponse {
   message: string;
@@ -50,7 +51,7 @@ function buildDashboardFact(context: AlertMessageContext): string {
   }
 
   if (context.business.runway_days != null) {
-    return `You have about ${context.business.runway_days} days of cash runway at the current pace.`;
+    return `You have about ${formatRunwayDaysPhrase(context.business.runway_days)} of cash runway at the current pace.`;
   }
 
   return "Your latest dashboard data is ready to review.";
@@ -59,7 +60,7 @@ function buildDashboardFact(context: AlertMessageContext): string {
 function buildNoAlertSummary(context: AlertMessageContext): string {
   const runwaySentence =
     context.business.runway_days != null
-      ? `You currently have about ${context.business.runway_days} days of cash runway.`
+      ? `You currently have about ${formatRunwayDaysPhrase(context.business.runway_days)} of cash runway.`
       : "Your latest cash flow summary is ready.";
 
   const supportingFact = buildDashboardFact(context);

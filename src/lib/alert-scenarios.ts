@@ -9,6 +9,7 @@ import type {
   Transaction,
 } from "./types";
 import { isGeminiServiceUnavailable } from "./demo-fallback";
+import { formatRunwayDaysPhrase } from "./runway-display";
 
 let alertCounter = 0;
 
@@ -51,7 +52,7 @@ export function detectRunwayAlert(
 
   const severity: Severity = runway_severity;
 
-  const headline = `You have ${runway_days} days of cash remaining at current burn rate.`;
+  const headline = `You have ${formatRunwayDaysPhrase(runway_days)} of cash remaining at current burn rate.`;
 
   let detail: string;
   if (severity === "red") {
