@@ -13,7 +13,7 @@ export default function LandingPage() {
           </div>
           <Link
             href="/connect"
-            className="text-sm px-4 py-1.5 rounded-lg bg-foreground text-background hover:bg-foreground/80 transition-colors font-medium"
+            className="text-sm px-4 py-2.5 bg-foreground text-background hover:bg-foreground/80 transition-colors font-medium inline-flex items-center"
           >
             Get started
           </Link>
@@ -98,13 +98,13 @@ export default function LandingPage() {
       {/* Features — border grid, no card backgrounds */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-4 text-center">
+          <p className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-4">
             {"// what_we_do"}
           </p>
-          <h2 className="text-2xl font-bold text-center mb-2 tracking-tight">
+          <h2 className="text-2xl font-bold mb-1 tracking-tight">
             QuickBooks tells you what happened.
           </h2>
-          <p className="text-center text-muted-foreground mb-12">
+          <p className="text-muted-foreground mb-12">
             Runway tells you what&apos;s about to happen.
           </p>
 
