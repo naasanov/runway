@@ -1,10 +1,85 @@
-import { Nav } from "@/components/nav";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { format, parseISO } from "date-fns";
 import { Bell, MessageSquare } from "lucide-react";
+import { Nav } from "@/components/nav";
+import { ApiError, runwayApi } from "@/lib/api";
+import type { Alert, AlertsResponse } from "@/lib/types";
 
 export default function AlertsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get("b");
+  const [data, setData] = useState<AlertsResponse | null>(null);
+  const [businessName, setBusinessName] = useState<string>("Business");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!businessId) {
+      router.replace("/connect");
+      return;
+    }
+
+    const selectedBusinessId = businessId;
+    let cancelled = false;
+
+    async function loadAlerts() {
+      try {
+        setError(null);
+        const [alertsResponse, dashboardResponse] = await Promise.all([
+          runwayApi.getAlerts(selectedBusinessId),
+          runwayApi.getDashboard(selectedBusinessId),
+        ]);
+
+        if (!cancelled) {
+          setData(alertsResponse);
+          setBusinessName(dashboardResponse.business.name);
+        }
+      } catch (alertsError) {
+        if (!cancelled) {
+          setError(
+            alertsError instanceof ApiError
+              ? alertsError.message
+              : "We couldn't load alert history."
+          );
+        }
+      }
+    }
+
+    void loadAlerts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [businessId, router]);
+
+  if (!businessId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="max-w-3xl mx-auto px-6 py-16">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <p className="font-medium">No business selected.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Connect a business first so we know which alerts to load.
+            </p>
+            <Link
+              href="/connect"
+              className="inline-flex mt-4 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium"
+            >
+              Go to connect
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-mobile-nav">
-      <Nav businessId="sweet-grace-bakery" />
+      <Nav businessId={businessId} />
 
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="mb-6">
@@ -13,98 +88,67 @@ export default function AlertsPage() {
             Alert History
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            All alerts sent for Sweet Grace Bakery
+            {data ? `All alerts sent for ${businessName}` : "Loading alert history..."}
           </p>
         </div>
 
-        <div className="space-y-3">
-          {ALERT_HISTORY.map((alert, i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-border bg-card p-5"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`mt-0.5 size-2.5 rounded-full shrink-0 ${
-                      alert.severity === "red"
-                        ? "bg-red-500"
-                        : alert.severity === "amber"
-                          ? "bg-amber-400"
-                          : "bg-green-500"
-                    }`}
-                  />
-                  <div>
-                    <p className="font-medium text-sm">{alert.headline}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {alert.detail}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs text-muted-foreground">{alert.date}</p>
-                  {alert.smsSent && (
-                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-1 justify-end">
-                      <MessageSquare className="size-3" />
-                      SMS sent
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
+            {error}
+          </div>
+        )}
+
+        {!error && !data && (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-24 rounded-xl bg-muted animate-pulse" />
+            ))}
+          </div>
+        )}
+
+        {data && (
+          <div className="space-y-3">
+            {data.alerts.map((alert) => (
+              <AlertRow key={alert.id} alert={alert} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
 }
 
-const ALERT_HISTORY = [
-  {
-    severity: "red",
-    headline: "Runway: 9 days — payroll at risk Mar 28",
-    detail:
-      "Projected cash shortfall of $2,200. Payroll ($3,800), insurance ($1,200), and rent ($2,400) all due same week.",
-    date: "Mar 19, 2:14 AM",
-    smsSent: true,
-  },
-  {
-    severity: "red",
-    headline: "Overdue invoice: Durham Catering — $3,200 (12 days overdue)",
-    detail:
-      "Invoice issued Mar 7. Payment not received. Collecting this resolves the March 28 shortfall.",
-    date: "Mar 19, 2:14 AM",
-    smsSent: false,
-  },
-  {
-    severity: "amber",
-    headline: "Subscription overlap detected: scheduling tools",
-    detail:
-      "Acuity Scheduling ($89/mo) and Calendly ($45/mo) serve the same purpose. Cancel one to save $1,068/year.",
-    date: "Mar 19, 2:14 AM",
-    smsSent: false,
-  },
-  {
-    severity: "amber",
-    headline: "Revenue concentration: Durham Catering at 68% of 90-day revenue",
-    detail:
-      "Single-client dependency above 60% threshold. High churn risk if this client churns.",
-    date: "Mar 19, 2:14 AM",
-    smsSent: false,
-  },
-  {
-    severity: "amber",
-    headline: "Runway below 60 days",
-    detail:
-      "Cash runway dropped to 47 days — amber threshold crossed. No immediate action required.",
-    date: "Mar 12, 9:01 AM",
-    smsSent: false,
-  },
-  {
-    severity: "green",
-    headline: "Wholesale payment received: Durham Catering — $2,800",
-    detail: "Monthly wholesale payment received on time. Runway extended by 4 days.",
-    date: "Mar 5, 11:42 AM",
-    smsSent: false,
-  },
-];
+function AlertRow({ alert }: { alert: Alert }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div
+            className={`mt-0.5 size-2.5 rounded-full shrink-0 ${
+              alert.severity === "red"
+                ? "bg-red-500"
+                : alert.severity === "amber"
+                  ? "bg-amber-400"
+                  : "bg-green-500"
+            }`}
+          />
+          <div>
+            <p className="font-medium text-sm">{alert.headline}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{alert.detail}</p>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-xs text-muted-foreground">
+            {format(parseISO(alert.created_at), "MMM d, h:mm a")}
+          </p>
+          {alert.sms_sent && (
+            <div className="flex items-center gap-1 text-xs text-green-600 mt-1 justify-end">
+              <MessageSquare className="size-3" />
+              SMS sent
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

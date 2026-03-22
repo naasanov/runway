@@ -10,6 +10,7 @@ import {
   generateBankingData,
   generateAllTransactions,
 } from "@/lib/seed-data";
+import { computeForecast } from "@/lib/forecast";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -118,8 +119,8 @@ describe("generateBankingData", () => {
     result = generateBankingData(BIZ_ID);
   });
 
-  it("returns account with current_balance of 4847.23", () => {
-    expect(result.account.current_balance).toBe(4847.23);
+  it("returns account with current_balance of 3127.23", () => {
+    expect(result.account.current_balance).toBe(3127.23);
   });
 
   it("next_payroll_due is 8 days from today", () => {
@@ -177,8 +178,8 @@ describe("generateAllTransactions", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("account current_balance is 4847.23", () => {
-    expect(result.account.current_balance).toBe(4847.23);
+  it("account current_balance is 3127.23", () => {
+    expect(result.account.current_balance).toBe(3127.23);
   });
 
   // ── Payroll-miss scenario validation (D1-03) ──────────────────────────────
@@ -189,5 +190,16 @@ describe("generateAllTransactions", () => {
     const upcomingPayroll = 3800;
     const upcomingInsurance = 1200;
     expect(upcomingPayroll + upcomingInsurance).toBeGreaterThan(balance);
+  });
+
+  it("produces a forecast runway under 14 days for the demo story", () => {
+    const forecast = computeForecast(
+      result.allTxns as never,
+      result.account.current_balance,
+      30
+    );
+
+    expect(forecast.runwayDays).toBeLessThan(14);
+    expect(forecast.firstNegativeDate).not.toBeNull();
   });
 });

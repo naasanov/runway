@@ -8,6 +8,7 @@ import type {
   AlertScenario,
   Transaction,
 } from "./types";
+import { isGeminiServiceUnavailable } from "./demo-fallback";
 
 let alertCounter = 0;
 
@@ -250,7 +251,56 @@ No markdown, no explanation.`,
     return alerts;
   } catch (err) {
     console.error("Subscription waste detection failed:", err);
-    return [];
+    if (!isGeminiServiceUnavailable(err)) {
+      return [];
+    }
+
+    console.log(
+      `[alerts:${businessId}] subscription_waste_gemini_fallback ${JSON.stringify({
+        subscription_count: subscriptions.length,
+      })}`
+    );
+
+    const schedulingTools = subscriptions.filter((subscription) =>
+      /homebase|7shifts|scheduling/i.test(subscription.description),
+    );
+
+    if (schedulingTools.length < 2) {
+      console.log(
+        `[alerts:${businessId}] subscription_waste_gemini_fallback_no_overlap ${JSON.stringify({
+          subscription_count: subscriptions.length,
+        })}`
+      );
+      return [];
+    }
+
+    const cancelTarget = schedulingTools.reduce((highest, current) =>
+      current.monthly_cost > highest.monthly_cost ? current : highest,
+    );
+    const totalMonthlyCost = schedulingTools.reduce(
+      (sum, tool) => sum + tool.monthly_cost,
+      0,
+    );
+    const annualSavings = cancelTarget.monthly_cost * 12;
+    const toolNames = schedulingTools.map((tool) => tool.description).join(" and ");
+
+    return [
+      createAlert(
+        businessId,
+        "subscription_waste",
+        "amber",
+        `You're paying $${totalMonthlyCost}/month for ${schedulingTools.length} scheduling tools that overlap.`,
+        `${toolNames} serve the same purpose. Cancel ${cancelTarget.description} to save $${annualSavings.toLocaleString()}/year.`,
+        [
+          {
+            action: `Cancel ${cancelTarget.description}`,
+            target: cancelTarget.description,
+            amount: cancelTarget.monthly_cost,
+            impact: `Save $${annualSavings.toLocaleString()}/year ($${cancelTarget.monthly_cost}/month)`,
+          },
+        ],
+      ),
+    ];
   }
 }
 

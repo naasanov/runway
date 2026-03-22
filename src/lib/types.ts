@@ -134,6 +134,12 @@ export interface MockBankingResponse {
   count: number;
 }
 
+export interface ConnectRequest {
+  business_name: string;
+  business_type: string;
+  owner_phone: string;
+}
+
 export interface ConnectResponse {
   business: Business;
   transactions_imported: number;
@@ -152,6 +158,67 @@ export interface AnalyzeResponse {
   }[];
   sms_sent: boolean;
 }
+
+export interface AnalyzeStreamTransaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  source: TransactionSource;
+  invoice_status: InvoiceStatus | null;
+  category: Category | null;
+  is_recurring: boolean;
+  recurrence_pattern: RecurrencePattern | null;
+}
+
+export interface AnalyzeStartedEvent {
+  type: "analysis_started";
+  business_id: string;
+  total_transactions: number;
+  batch_size: number;
+  total_batches: number;
+}
+
+export interface AnalyzeBatchStartedEvent {
+  type: "batch_started";
+  business_id: string;
+  batch_number: number;
+  batch_size: number;
+  transactions: AnalyzeStreamTransaction[];
+}
+
+export interface AnalyzeBatchCompletedEvent {
+  type: "batch_completed";
+  business_id: string;
+  batch_number: number;
+  processed_count: number;
+  transactions: AnalyzeStreamTransaction[];
+}
+
+export interface AnalyzeFallbackUsedEvent {
+  type: "fallback_used";
+  business_id: string;
+  batch_number: number;
+  fallback_count: number;
+}
+
+export interface AnalyzeCompletedEvent extends AnalyzeResponse {
+  type: "analysis_completed";
+}
+
+export interface AnalyzeFailedEvent {
+  type: "analysis_failed";
+  code: string;
+  message: string;
+}
+
+export type AnalyzeStreamEvent =
+  | AnalyzeStartedEvent
+  | AnalyzeBatchStartedEvent
+  | AnalyzeBatchCompletedEvent
+  | AnalyzeFallbackUsedEvent
+  | AnalyzeCompletedEvent
+  | AnalyzeFailedEvent;
 
 export interface DashboardResponse {
   business: Pick<Business, "id" | "name" | "current_balance" | "runway_days" | "runway_severity">;

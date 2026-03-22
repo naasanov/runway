@@ -4,8 +4,8 @@
  * "9-days-to-payroll-miss" story stays accurate on any run date.
  */
 
-import type { Transaction } from "./types";
 import { randomUUID } from "crypto";
+import type { Transaction } from "./types";
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -47,18 +47,18 @@ export function generateStripeTransactions(
   const today = new Date();
   const txns: Omit<Transaction, "created_at">[] = [];
 
-  // ── Daily retail revenue: 90 days of customer payments ──────────────────────
-  for (let i = 90; i >= 1; i--) {
+  // ── Daily retail revenue: modest foot traffic over 70 days ──────────────────
+  for (let i = 70; i >= 1; i--) {
     const day = new Date(today);
     day.setDate(day.getDate() - i);
     const isWeekend = day.getDay() === 0 || day.getDay() === 6;
     const count = isWeekend
-      ? 6 + Math.floor(Math.random() * 3) // 6-8
-      : 3 + Math.floor(Math.random() * 5); // 3-7
+      ? 3 + Math.floor(Math.random() * 2) // 3-4
+      : 2 + Math.floor(Math.random() * 2); // 2-3
     for (let t = 0; t < count; t++) {
       const amount = isWeekend
-        ? Math.round((80 + Math.random() * 270) * 100) / 100
-        : Math.round((15 + Math.random() * 185) * 100) / 100;
+        ? Math.round((12 + Math.random() * 30) * 100) / 100
+        : Math.round((8 + Math.random() * 20) * 100) / 100;
       txns.push({
         id: nextId("txn-str"),
         business_id: businessId,
@@ -181,12 +181,12 @@ export function generateStripeTransactions(
   // Bi-weekly invoices at $8k-12k each so Durham accounts for >60% of total revenue.
   // This triggers the revenue_concentration red alert.
   const durhamPaidInvoices = [
-    { amount: 16000, daysBack: 84 },
-    { amount: 18500, daysBack: 70 },
-    { amount: 21000, daysBack: 56 },
-    { amount: 19500, daysBack: 42 },
-    { amount: 17000, daysBack: 28 },
-    { amount: 20000, daysBack: 14 },
+    { amount: 4200, daysBack: 112 },
+    { amount: 4600, daysBack: 98 },
+    { amount: 5100, daysBack: 84 },
+    { amount: 4800, daysBack: 70 },
+    { amount: 4400, daysBack: 56 },
+    { amount: 5000, daysBack: 42 },
   ];
   durhamPaidInvoices.forEach(({ amount, daysBack }, i) => {
     txns.push({
@@ -289,7 +289,7 @@ export function generateBankingData(businessId: string): {
     id: "acct-sgb-checking",
     business_id: businessId,
     type: "checking",
-    current_balance: 4847.23,
+    current_balance: 3127.23,
     as_of: fmt(new Date()),
     // Future obligations that create the payroll-miss scenario:
     // Payroll in 8 days + Insurance in 7 days = shortfall on ~day 8

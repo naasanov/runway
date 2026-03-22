@@ -65,8 +65,8 @@ const geminiResponse = JSON.stringify([
   { id: "txn-003", category: "revenue", is_recurring: false, recurrence_pattern: null },
 ]);
 
-// Track all supabase update calls for assertions
-const updateCalls: { id: string; data: Record<string, unknown> }[] = [];
+// Track bulk categorization writes and business metric updates for assertions
+const bulkCategorizationWrites: Record<string, unknown>[] = [];
 const businessUpdateCalls: Record<string, unknown>[] = [];
 
 // ─── Mock Supabase ───────────────────────────────────────────────────────────
@@ -107,6 +107,10 @@ jest.mock("@/lib/supabase", () => {
                     data: mockTransactions,
                     error: null,
                   }),
+                  not: jest.fn().mockResolvedValue({
+                    count: mockTransactions.length,
+                    error: null,
+                  }),
                 };
 
                 return Object.assign(
@@ -118,23 +122,30 @@ jest.mock("@/lib/supabase", () => {
                 );
               }),
             })),
-            update: jest.fn((data: Record<string, unknown>) => ({
-              eq: jest.fn((field: string, value: string) => {
-                if (field === "id") {
-                  return {
-                    eq: jest.fn().mockImplementation(() => {
-                      updateCalls.push({ id: value, data });
-                      return { error: null };
-                    }),
-                  };
-                }
-                return { error: null };
-              }),
-            })),
+            upsert: jest.fn((rows: Record<string, unknown>[]) => {
+              bulkCategorizationWrites.splice(
+                0,
+                bulkCategorizationWrites.length,
+                ...rows,
+              );
+
+              return {
+                select: jest.fn().mockResolvedValue({
+                  data: rows.map((row) => ({ id: row.id })),
+                  error: null,
+                }),
+              };
+            }),
           };
         }
         if (table === "alerts") {
           return {
+            select: jest.fn(() => ({
+              eq: jest.fn().mockResolvedValue({
+                count: 0,
+                error: null,
+              }),
+            })),
             insert: jest.fn().mockResolvedValue({ error: null }),
             delete: jest.fn(() => ({
               eq: jest.fn().mockResolvedValue({ error: null }),
@@ -157,6 +168,21 @@ jest.mock("@/lib/gemini", () => ({
   },
 }));
 
+jest.mock("@/lib/alert-scenarios", () => ({
+  detectRunwayAlert: jest.fn(() => null),
+  detectOverdueInvoiceAlerts: jest.fn(() => []),
+  detectSubscriptionWasteAlerts: jest.fn(async () => []),
+  clearExistingAlerts: jest.fn(async () => {}),
+  writeAlertToDb: jest.fn(
+    async (_supabase: unknown, alert: Record<string, unknown>) => ({
+      ...alert,
+      sms_sent: false,
+      sms_sent_at: null,
+      created_at: "2026-03-22T10:00:00.000Z",
+    }),
+  ),
+}));
+
 import { POST } from "@/app/api/business/[id]/analyze/route";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -172,7 +198,7 @@ function callAnalyze(businessId = "biz-test") {
 
 describe("POST /api/business/:id/analyze — categorization", () => {
   beforeEach(() => {
-    updateCalls.length = 0;
+    bulkCategorizationWrites.length = 0;
     businessUpdateCalls.length = 0;
     mockGenerateContent.mockReset();
     mockGenerateContent.mockResolvedValue({
@@ -206,28 +232,34 @@ describe("POST /api/business/:id/analyze — categorization", () => {
   it("writes correct categories back to DB", async () => {
     await callAnalyze();
 
-    expect(updateCalls).toHaveLength(3);
+    expect(bulkCategorizationWrites).toHaveLength(3);
 
-    const payroll = updateCalls.find((c) => c.id === "txn-001");
-    expect(payroll?.data).toEqual({
+    const payroll = bulkCategorizationWrites.find((row) => row.id === "txn-001");
+    expect(payroll).toEqual(expect.objectContaining({
+      id: "txn-001",
+      business_id: "biz-test",
       category: "payroll",
       is_recurring: true,
       recurrence_pattern: "biweekly",
-    });
+    }));
 
-    const sub = updateCalls.find((c) => c.id === "txn-002");
-    expect(sub?.data).toEqual({
+    const sub = bulkCategorizationWrites.find((row) => row.id === "txn-002");
+    expect(sub).toEqual(expect.objectContaining({
+      id: "txn-002",
+      business_id: "biz-test",
       category: "subscriptions",
       is_recurring: true,
       recurrence_pattern: "monthly",
-    });
+    }));
 
-    const revenue = updateCalls.find((c) => c.id === "txn-003");
-    expect(revenue?.data).toEqual({
+    const revenue = bulkCategorizationWrites.find((row) => row.id === "txn-003");
+    expect(revenue).toEqual(expect.objectContaining({
+      id: "txn-003",
+      business_id: "biz-test",
       category: "revenue",
       is_recurring: false,
       recurrence_pattern: null,
-    });
+    }));
   });
 
   it("persists recomputed runway metrics to the business record", async () => {
@@ -255,8 +287,8 @@ describe("POST /api/business/:id/analyze — categorization", () => {
 
     await callAnalyze();
 
-    const invalid = updateCalls.find((c) => c.id === "txn-001");
-    expect(invalid?.data.category).toBe("unknown");
+    const invalid = bulkCategorizationWrites.find((row) => row.id === "txn-001");
+    expect(invalid?.category).toBe("unknown");
   });
 
   it("validates recurrence_pattern against the known enum", async () => {
@@ -273,8 +305,8 @@ describe("POST /api/business/:id/analyze — categorization", () => {
 
     await callAnalyze();
 
-    const invalid = updateCalls.find((c) => c.id === "txn-001");
-    expect(invalid?.data.recurrence_pattern).toBeNull();
+    const invalid = bulkCategorizationWrites.find((row) => row.id === "txn-001");
+    expect(invalid?.recurrence_pattern).toBeNull();
   });
 
   it("handles Gemini returning markdown-fenced JSON", async () => {
@@ -299,6 +331,25 @@ describe("POST /api/business/:id/analyze — categorization", () => {
 
     const body = await res.json();
     expect(body.code).toBe("ANALYZE_FAILED");
+  });
+
+  it("falls back to deterministic demo categorization when Gemini is unavailable", async () => {
+    mockGenerateContent.mockRejectedValue(new Error("503 Service Unavailable"));
+
+    const res = await callAnalyze();
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.transactions_categorized).toBe(3);
+
+    const payroll = bulkCategorizationWrites.find((row) => row.id === "txn-001");
+    expect(payroll).toEqual(
+      expect.objectContaining({
+        category: "payroll",
+        is_recurring: true,
+        recurrence_pattern: "biweekly",
+      })
+    );
   });
 });
 

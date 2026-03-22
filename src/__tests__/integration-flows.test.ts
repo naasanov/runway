@@ -67,11 +67,14 @@ function resetStore() {
 
 function matchesFilters<T extends Record<string, unknown>>(
   row: T,
-  filters: Array<{ field: string; value: unknown; kind: "eq" | "is" }>,
+  filters: Array<{ field: string; value: unknown; kind: "eq" | "is" | "not" }>,
 ) {
   return filters.every((filter) => {
     if (filter.kind === "eq") {
       return row[filter.field] === filter.value;
+    }
+    if (filter.kind === "not") {
+      return row[filter.field] !== filter.value;
     }
     return row[filter.field] === filter.value;
   });
@@ -96,7 +99,7 @@ function getTable(table: string): RowRecord[] {
 
 function makeSelectBuilder(table: string) {
   const rows = getTable(table);
-  const filters: Array<{ field: string; value: unknown; kind: "eq" | "is" }> =
+  const filters: Array<{ field: string; value: unknown; kind: "eq" | "is" | "not" }> =
     [];
 
   const builder = {
@@ -109,6 +112,14 @@ function makeSelectBuilder(table: string) {
     },
     is(field: string, value: unknown) {
       filters.push({ field, value, kind: "is" });
+      builder.data = clone(rows.filter((row) => matchesFilters(row, filters)));
+      return builder;
+    },
+    not(field: string, operator: string, value: unknown) {
+      if (operator !== "is") {
+        throw new Error(`Unsupported not operator ${operator}`);
+      }
+      filters.push({ field, value, kind: "not" });
       builder.data = clone(rows.filter((row) => matchesFilters(row, filters)));
       return builder;
     },
@@ -154,6 +165,42 @@ function makeInsertBuilder(table: string, payload: Record<string, unknown> | Rec
           });
         },
       };
+    },
+    error: null,
+  };
+}
+
+function makeUpsertBuilder(
+  table: string,
+  payload: Record<string, unknown> | Record<string, unknown>[],
+  options?: { onConflict?: string },
+) {
+  const rows = getTable(table);
+  const records = clone(Array.isArray(payload) ? payload : [payload]);
+  const conflictField = options?.onConflict ?? "id";
+
+  records.forEach((record) => {
+    const existingIndex = rows.findIndex(
+      (row) => (row as RowRecord)[conflictField] === record[conflictField],
+    );
+
+    if (existingIndex >= 0) {
+      rows[existingIndex] = {
+        ...rows[existingIndex],
+        ...record,
+      };
+      return;
+    }
+
+    rows.push(record);
+  });
+
+  return {
+    select() {
+      return Promise.resolve({
+        data: clone(records),
+        error: null,
+      });
     },
     error: null,
   };
@@ -214,6 +261,10 @@ jest.mock("@/lib/supabase", () => ({
       insert: jest.fn((payload: Record<string, unknown> | Record<string, unknown>[]) =>
         makeInsertBuilder(table, payload),
       ),
+      upsert: jest.fn((
+        payload: Record<string, unknown> | Record<string, unknown>[],
+        options?: { onConflict?: string },
+      ) => makeUpsertBuilder(table, payload, options)),
       update: jest.fn((payload: Record<string, unknown>) =>
         makeUpdateBuilder(table, payload),
       ),
