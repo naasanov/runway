@@ -8,6 +8,12 @@ export default function DashboardPage() {
       <Nav businessId="sweet-grace-bakery" />
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        {/* Page header */}
+        <header>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Sweet Grace Bakery · Cash flow overview</p>
+        </header>
+
         {/* Headline metric */}
         <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20 p-6">
           <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-1">
@@ -16,10 +22,10 @@ export default function DashboardPage() {
           <p className="text-5xl font-bold text-red-700 dark:text-red-300 mb-2">
             9 days
           </p>
-          <p className="text-red-800 dark:text-red-200 font-semibold text-lg">
+          <p className="text-red-800 dark:text-red-200 font-semibold text-lg max-w-prose">
             You will miss payroll on March 28th.
           </p>
-          <p className="text-sm text-red-700/70 dark:text-red-300/70 mt-1">
+          <p className="text-sm text-red-700/70 dark:text-red-300/70 mt-1 max-w-prose">
             Current balance: $4,200 · Projected shortfall: $2,200
           </p>
         </section>
@@ -29,7 +35,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-semibold flex items-center gap-2">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
                   <TrendingDown className="size-4" />
                   30-Day Cash Forecast
                 </h2>
@@ -38,15 +44,54 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            {/* Chart will be implemented here */}
-            <div className="h-48 rounded-lg bg-muted/50 flex items-center justify-center text-sm text-muted-foreground">
-              Chart component — coming soon
+            {/* Simple cash flow visualization */}
+            <div className="h-48 relative">
+              <svg className="w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
+                {/* Grid lines */}
+                <line x1="0" y1="75" x2="400" y2="75" stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4" />
+                <line x1="0" y1="37.5" x2="400" y2="37.5" stroke="currentColor" strokeOpacity="0.05" strokeDasharray="4" />
+                <line x1="0" y1="112.5" x2="400" y2="112.5" stroke="currentColor" strokeOpacity="0.05" strokeDasharray="4" />
+
+                {/* Danger zone */}
+                <rect x="0" y="100" width="400" height="50" fill="rgb(239 68 68)" fillOpacity="0.1" />
+
+                {/* Cash flow line */}
+                <path
+                  d="M 0,30 Q 50,25 100,35 T 200,50 T 300,90 T 350,110 L 400,130"
+                  fill="none"
+                  stroke="rgb(239 68 68)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+
+                {/* Data points */}
+                <circle cx="0" cy="30" r="4" fill="rgb(34 197 94)" />
+                <circle cx="100" cy="35" r="4" fill="rgb(34 197 94)" />
+                <circle cx="200" cy="50" r="4" fill="rgb(234 179 8)" />
+                <circle cx="300" cy="90" r="4" fill="rgb(234 179 8)" />
+                <circle cx="350" cy="110" r="4" fill="rgb(239 68 68)" />
+              </svg>
+
+              {/* Y-axis labels */}
+              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[10px] text-muted-foreground py-1">
+                <span>$8k</span>
+                <span>$4k</span>
+                <span className="text-red-500">$0</span>
+              </div>
+
+              {/* X-axis labels */}
+              <div className="absolute bottom-0 left-8 right-0 flex justify-between text-[10px] text-muted-foreground">
+                <span>Today</span>
+                <span>Week 2</span>
+                <span>Week 3</span>
+                <span className="text-red-500">Mar 28</span>
+              </div>
             </div>
           </div>
 
           {/* Upcoming obligations */}
           <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-semibold flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
               <Calendar className="size-4" />
               Upcoming Obligations
             </h2>
@@ -57,7 +102,7 @@ export default function DashboardPage() {
                     <p className="font-medium">{item.label}</p>
                     <p className="text-xs text-muted-foreground">{item.date}</p>
                   </div>
-                  <span className={`font-semibold ${item.danger ? "text-red-600" : ""}`}>
+                  <span className={`font-semibold tabular-nums ${item.danger ? "text-red-600" : ""}`}>
                     ${item.amount.toLocaleString()}
                   </span>
                 </div>
@@ -68,7 +113,7 @@ export default function DashboardPage() {
 
         {/* Active alerts */}
         <section>
-          <h2 className="font-semibold flex items-center gap-2 mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
             <AlertTriangle className="size-4" />
             Active Alerts
           </h2>
@@ -81,7 +126,7 @@ export default function DashboardPage() {
 
         {/* Recommended actions */}
         <section>
-          <h2 className="font-semibold flex items-center gap-2 mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
             <Zap className="size-4" />
             Recommended Actions
           </h2>
@@ -99,7 +144,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">{action.impact}</p>
                 </div>
                 {action.cta && (
-                  <button className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors">
+                  <button className="shrink-0 text-xs px-4 py-2.5 min-h-[44px] rounded-lg border border-border hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                     {action.cta}
                   </button>
                 )}
@@ -132,13 +177,15 @@ function AlertCard({
     green: "bg-green-500",
   };
 
+  const isRed = severity === "red";
+
   return (
-    <div className={`rounded-xl border p-4 ${colors[severity]}`}>
-      <div className="flex items-center gap-2 mb-1">
-        <span className={`size-2 rounded-full ${dotColors[severity]}`} />
-        <p className="text-sm font-semibold">{headline}</p>
+    <div className={`rounded-xl border p-4 ${colors[severity]} ${isRed ? "ring-1 ring-red-300 dark:ring-red-800" : ""}`}>
+      <div className="flex items-center gap-2.5 mb-1.5">
+        <span className={`size-3 rounded-full ${dotColors[severity]} ${isRed ? "animate-pulse" : ""}`} />
+        <p className={`font-semibold ${isRed ? "text-base" : "text-sm"}`}>{headline}</p>
       </div>
-      <p className="text-sm text-muted-foreground pl-4">{detail}</p>
+      <p className="text-sm text-muted-foreground pl-5 max-w-prose">{detail}</p>
     </div>
   );
 }
