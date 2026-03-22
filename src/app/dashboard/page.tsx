@@ -303,7 +303,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-background pb-mobile-nav">
         <Nav businessId={businessId} />
         <main className="max-w-6xl mx-auto px-6 py-8">
-          <div className="border border-red-200 bg-red-50 p-6 text-red-700">
+          <div className="border border-border p-6 text-red-600">
             {error}
           </div>
         </main>
@@ -338,28 +338,24 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background pb-mobile-nav">
       <Nav businessId={businessId} />
 
-      {/* Crisis banner — front-and-center staging for critical state */}
+      {/* Crisis / warning banner — colored bg, white text only (no secondary color text) */}
       {isCritical && (
         <div className="bg-red-600 border-b border-red-700">
           <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shrink-0" />
-            <p className="text-white text-sm font-semibold">
-              <span className="font-black">CASH CRISIS:</span>{" "}
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
+            <p className="text-white text-sm font-medium">
+              <span className="font-bold">Cash crisis:</span>{" "}
               {runwayDays} days of runway remaining
-              {headlineAlert && (
-                <span className="text-red-200 font-normal"> — {headlineAlert.headline}</span>
-              )}
+              {headlineAlert && ` — ${headlineAlert.headline}`}
             </p>
           </div>
         </div>
       )}
-
-      {/* Warning banner */}
       {isWarning && (
         <div className="bg-amber-500 border-b border-amber-600">
           <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-white shrink-0" />
-            <p className="text-white text-sm font-semibold">
+            <p className="text-white text-sm font-medium">
               Cash runway is low — {runwayDays} days remaining at current burn rate.
             </p>
           </div>
@@ -379,7 +375,7 @@ export default function DashboardPage() {
         {/* #01 · Cash Runway */}
         <section>
           <SectionHeader index="01" label="Cash Runway" />
-          <div className={`${sc.bg} border ${sc.border} border-l-4 ${sc.accent} relative overflow-hidden`}>
+          <div className={`bg-background border border-border border-l-4 ${sc.accent} relative overflow-hidden`}>
 
             {/* Runway meter bar at bottom */}
             <div className="absolute bottom-0 left-0 w-full h-1 bg-border/20">
@@ -401,16 +397,16 @@ export default function DashboardPage() {
                   <div>
                     <p className="text-base font-bold text-foreground">days of cash</p>
                     <p className="text-xs text-muted-foreground">at current burn rate</p>
-                    <div className={`inline-flex mt-2 px-2.5 py-1 text-[10px] font-mono font-black uppercase tracking-wider ${sc.badge}`}>
-                      {isCritical ? "⚠ critical" : isWarning ? "▲ warning" : "✓ healthy"}
+                    <div className={`inline-flex mt-2 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border border-border text-muted-foreground`}>
+                      {isCritical ? "critical" : isWarning ? "warning" : "healthy"}
                     </div>
                   </div>
                 </div>
 
-                {/* Headline alert callout */}
+                {/* Headline alert callout — neutral bg, colored text only */}
                 {headlineAlert && (
-                  <div className={`ml-auto max-w-sm p-4 border ${sc.border} ${sc.bg} rounded-sm`}>
-                    <p className={`text-xs font-mono uppercase tracking-wider mb-1 ${sc.text}`}>
+                  <div className="ml-auto max-w-sm p-4 border border-border">
+                    <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-1">
                       top alert
                     </p>
                     <p className={`text-sm font-semibold leading-snug ${sc.text}`}>
@@ -482,7 +478,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={`${item.description}-${item.due_date}`}
-                    className={`flex items-center gap-3 px-4 py-3 text-sm ${isDanger ? "bg-red-50" : ""}`}
+                    className="flex items-center gap-3 px-4 py-3 text-sm"
                   >
                     <span className="text-[10px] font-mono text-muted-foreground w-4 tabular-nums shrink-0">
                       {String(i + 1).padStart(2, "0")}
@@ -560,7 +556,7 @@ function AlertCard({
   const sc = getColors(severity);
 
   return (
-    <div className={`${sc.bg} border ${sc.border} border-l-4 ${sc.accent} p-5`}>
+    <div className={`bg-background border border-border border-l-4 ${sc.accent} p-5`}>
       <div className="flex items-start gap-3 mb-2">
         <div
           className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${sc.dot} ${severity === "red" ? "animate-pulse" : ""}`}
