@@ -7,6 +7,14 @@
 import { GET as stripeGET } from "@/app/api/mock/stripe/transactions/route";
 import { GET as bankingGET } from "@/app/api/mock/banking/accounts/route";
 
+function callStripe() {
+  return stripeGET(new Request("http://localhost/api/mock/stripe/transactions"));
+}
+
+function callBanking() {
+  return bankingGET(new Request("http://localhost/api/mock/banking/accounts"));
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -21,7 +29,7 @@ function dateInDays(n: number): string {
 
 describe("GET /api/mock/stripe/transactions", () => {
   it("returns 200 with transactions array and count", async () => {
-    const res = await stripeGET();
+    const res = await callStripe();
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -31,13 +39,13 @@ describe("GET /api/mock/stripe/transactions", () => {
   });
 
   it("returns at least 200 transactions", async () => {
-    const res = await stripeGET();
+    const res = await callStripe();
     const body = await res.json();
     expect(body.transactions.length).toBeGreaterThanOrEqual(200);
   });
 
   it("all transactions have category: null (pre-Gemini categorization)", async () => {
-    const res = await stripeGET();
+    const res = await callStripe();
     const body = await res.json();
     const nonNull = body.transactions.filter(
       (t: { category: unknown }) => t.category !== null
@@ -46,7 +54,7 @@ describe("GET /api/mock/stripe/transactions", () => {
   });
 
   it("contains exactly one unpaid Durham Catering invoice", async () => {
-    const res = await stripeGET();
+    const res = await callStripe();
     const body = await res.json();
     const unpaid = body.transactions.filter(
       (t: { invoice_status: string }) => t.invoice_status === "unpaid"
@@ -57,7 +65,7 @@ describe("GET /api/mock/stripe/transactions", () => {
   });
 
   it("unpaid invoice date is always 12 days in the past (relative to today)", async () => {
-    const res = await stripeGET();
+    const res = await callStripe();
     const body = await res.json();
     const unpaid = body.transactions.find(
       (t: { invoice_status: string }) => t.invoice_status === "unpaid"
@@ -66,7 +74,7 @@ describe("GET /api/mock/stripe/transactions", () => {
   });
 
   it("all transaction dates are on or before today", async () => {
-    const res = await stripeGET();
+    const res = await callStripe();
     const body = await res.json();
     const future = body.transactions.filter(
       (t: { date: string }) => t.date > today()
@@ -75,7 +83,7 @@ describe("GET /api/mock/stripe/transactions", () => {
   });
 
   it("each transaction has required fields", async () => {
-    const res = await stripeGET();
+    const res = await callStripe();
     const body = await res.json();
     const required = [
       "id",
@@ -100,7 +108,7 @@ describe("GET /api/mock/stripe/transactions", () => {
 
 describe("GET /api/mock/banking/accounts", () => {
   it("returns 200 with account and transactions", async () => {
-    const res = await bankingGET();
+    const res = await callBanking();
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -110,31 +118,31 @@ describe("GET /api/mock/banking/accounts", () => {
   });
 
   it("account current_balance is 3127.23", async () => {
-    const res = await bankingGET();
+    const res = await callBanking();
     const body = await res.json();
     expect(body.account.current_balance).toBe(3127.23);
   });
 
   it("next_payroll_due is 8 days from today (in meta)", async () => {
-    const res = await bankingGET();
+    const res = await callBanking();
     const body = await res.json();
     expect(body.meta.next_payroll_due).toBe(dateInDays(8));
   });
 
   it("next_insurance_due is 7 days from today (in meta)", async () => {
-    const res = await bankingGET();
+    const res = await callBanking();
     const body = await res.json();
     expect(body.meta.next_insurance_due).toBe(dateInDays(7));
   });
 
   it("as_of is today", async () => {
-    const res = await bankingGET();
+    const res = await callBanking();
     const body = await res.json();
     expect(body.account.as_of).toBe(today());
   });
 
   it("all transactions have category: null", async () => {
-    const res = await bankingGET();
+    const res = await callBanking();
     const body = await res.json();
     const nonNull = body.transactions.filter(
       (t: { category: unknown }) => t.category !== null
@@ -143,7 +151,7 @@ describe("GET /api/mock/banking/accounts", () => {
   });
 
   it("has a past insurance debit of $1,200", async () => {
-    const res = await bankingGET();
+    const res = await callBanking();
     const body = await res.json();
     const insurance = body.transactions.filter(
       (t: { category: string; amount: number }) =>

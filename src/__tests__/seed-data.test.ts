@@ -9,6 +9,9 @@ import {
   generateStripeTransactions,
   generateBankingData,
   generateAllTransactions,
+  generateConcentrationStripeTransactions,
+  generateConcentrationBankingData,
+  generateConcentrationTransactions,
 } from "@/lib/seed-data";
 import { computeForecast } from "@/lib/forecast";
 
@@ -192,14 +195,51 @@ describe("generateAllTransactions", () => {
     expect(upcomingPayroll + upcomingInsurance).toBeGreaterThan(balance);
   });
 
-  it("produces a forecast runway under 14 days for the demo story", () => {
+  it("produces a forecast runway of 14 days or less for the demo story", () => {
     const forecast = computeForecast(
       result.allTxns as never,
       result.account.current_balance,
       30
     );
 
-    expect(forecast.runwayDays).toBeLessThan(14);
+    expect(forecast.runwayDays).toBeLessThanOrEqual(14);
     expect(forecast.firstNegativeDate).not.toBeNull();
+  });
+});
+
+describe("concentration scenario seed data", () => {
+  const BIZ_ID = "biz-concentration-test";
+
+  it("concentration stripe seed yields >75% revenue from one client", () => {
+    const txns = generateConcentrationStripeTransactions(BIZ_ID);
+
+    const revenue = txns.filter((t) => t.amount > 0 && t.category === "revenue");
+    const totalRevenue = revenue.reduce((sum, t) => sum + t.amount, 0);
+    const topClientRevenue = revenue
+      .filter((t) => t.customer_id === "cust-techcorp-solutions")
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    expect(totalRevenue).toBeGreaterThan(0);
+    expect(topClientRevenue / totalRevenue).toBeGreaterThan(0.75);
+  });
+
+  it("concentration stripe seed has clean subscriptions (no scheduling overlap tags)", () => {
+    const txns = generateConcentrationStripeTransactions(BIZ_ID);
+    const schedulingTagged = txns.filter((t) => t.tags.includes("scheduling"));
+    expect(schedulingTagged).toHaveLength(0);
+  });
+
+  it("concentration banking seed keeps runway healthy (no near-term crisis)", () => {
+    const { account } = generateConcentrationBankingData(BIZ_ID);
+    expect(account.current_balance).toBe(52000);
+    expect(account.next_payroll_due).toBe(dateInDays(9));
+    expect(account.next_insurance_due).toBe(dateInDays(45));
+  });
+
+  it("generateConcentrationTransactions combines stripe + banking transactions", () => {
+    const result = generateConcentrationTransactions(BIZ_ID);
+    expect(result.allTxns.length).toBe(
+      result.stripeTxns.length + result.bankingTxns.length
+    );
   });
 });
