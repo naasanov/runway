@@ -221,7 +221,7 @@ export type AnalyzeStreamEvent =
   | AnalyzeFailedEvent;
 
 export interface DashboardResponse {
-  business: Pick<Business, "id" | "name" | "current_balance" | "runway_days" | "runway_severity">;
+  business: Pick<Business, "id" | "name" | "current_balance" | "runway_days" | "runway_severity" | "owner_phone">;
   alerts: Alert[];
   forecast_summary: {
     horizon_days: number;
@@ -260,6 +260,15 @@ export interface SendSmsResponse {
   sms_sent_at: string;
   to: string;
   message_preview: string;
+}
+
+export interface CallAlertResponse {
+  success: boolean;
+}
+
+export interface MeResponse {
+  name: string | null;
+  phone: string;
 }
 
 export interface SendReminderResponse {

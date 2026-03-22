@@ -1,4 +1,3 @@
-import { ConnectCTA } from "@/components/connect-cta";
 import Link from "next/link";
 import React from "react";
 import { TrendingDown, Bell, Zap, ArrowRight } from "lucide-react";
@@ -16,13 +15,21 @@ export default function LandingPage() {
             <RunwayLogoIcon className="size-8" style={{ color: GREEN }} />
             <span style={{ color: GREEN }}>Runway</span>
           </div>
-          <Link
-            href="/connect"
-            className="text-sm px-4 py-2.5 text-white font-medium inline-flex items-center hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: GREEN }}
-          >
-            Get started
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="text-sm px-4 py-2.5 font-medium border border-border hover:bg-muted transition-colors"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/signup"
+              className="text-sm px-4 py-2.5 text-white font-medium inline-flex items-center hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: GREEN }}
+            >
+              Get started
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -49,16 +56,19 @@ export default function LandingPage() {
 
             {/* Right: CTAs stacked */}
             <div className="flex flex-row lg:flex-col gap-3 lg:items-stretch shrink-0">
-              <ConnectCTA
-                label="Connect your Stripe"
+              <Link
+                href="/signup"
                 className="inline-flex items-center justify-between gap-4 px-6 py-4 text-white font-semibold hover:opacity-90 transition-opacity text-sm whitespace-nowrap"
                 style={{ backgroundColor: GREEN }}
-              />
+              >
+                Connect your Stripe
+                <ArrowRight className="size-4 shrink-0" />
+              </Link>
               <Link
-                href="/connect"
+                href="/login"
                 className="inline-flex items-center justify-center px-6 py-4 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm whitespace-nowrap"
               >
-                View demo
+                Log in
               </Link>
             </div>
           </div>
@@ -149,7 +159,7 @@ export default function LandingPage() {
             </p>
           </div>
           <Link
-            href="/connect"
+            href="/signup"
             className="inline-flex items-center gap-2 px-6 py-3 text-white font-semibold hover:opacity-90 transition-opacity text-sm shrink-0"
             style={{ backgroundColor: GREEN }}
           >

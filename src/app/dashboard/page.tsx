@@ -211,6 +211,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const callScheduled = useRef(false);
 
   useEffect(() => {
     if (!businessId) {
@@ -240,7 +241,13 @@ export default function DashboardPage() {
           );
         }
 
-        if (!cancelled) setData(response);
+        if (!cancelled) {
+          setData(response);
+          if (!callScheduled.current && response.business.owner_phone) {
+            callScheduled.current = true;
+            void runwayApi.scheduleCall(response.business.owner_phone);
+          }
+        }
       } catch (dashboardError) {
         if (!cancelled) {
           setError(
