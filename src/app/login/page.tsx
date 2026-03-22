@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const GREEN = "#166534";
+const GREEN_LIGHT = "#4ade80";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,14 +52,14 @@ export default function LoginPage() {
         style={{ backgroundColor: "oklch(0.145 0 0)", color: "oklch(0.985 0 0)" }}
       >
         <div className="flex items-center gap-2 font-semibold mb-auto">
-          <Plane className="size-4" style={{ color: GREEN }} />
-          <span style={{ color: GREEN }}>Runway</span>
+          <Plane className="size-4" style={{ color: GREEN_LIGHT }} />
+          <span style={{ color: GREEN_LIGHT }}>Runway</span>
         </div>
 
         <div className="mt-16 lg:mt-0 lg:flex-1 lg:flex lg:flex-col lg:justify-center">
           <p
             className="text-[10px] font-mono tracking-[0.2em] uppercase mb-5"
-            style={{ color: GREEN }}
+            style={{ color: GREEN_LIGHT }}
           >
             {"// financial_intelligence / 2026"}
           </p>
@@ -182,7 +183,7 @@ function ValueProp({ icon, label }: { icon: React.ReactNode; label: string }) {
     <div className="flex items-center gap-3">
       <div
         className="size-7 flex items-center justify-center border shrink-0"
-        style={{ borderColor: `${GREEN}50`, color: GREEN }}
+        style={{ borderColor: `${GREEN_LIGHT}50`, color: GREEN_LIGHT }}
       >
         {icon}
       </div>

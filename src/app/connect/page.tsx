@@ -104,9 +104,12 @@ export default function ConnectPage() {
   const queuedTransactionsRef = useRef<AnalyzeStreamTransaction[]>([]);
   const completionHandledRef = useRef(false);
 
+  const launchTimeRef = useRef<number>(0);
+
   const [ownerPhone, setOwnerPhone] = useState<string | null>(null);
   const [step, setStep] = useState<ConnectStep>("idle");
   const [launching, setLaunching] = useState(false);
+  const [streamCollapsed, setStreamCollapsed] = useState(false);
   const [business, setBusiness] = useState<ConnectResponse["business"] | null>(
     null
   );
@@ -137,6 +140,15 @@ export default function ConnectPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (step === "done") {
+      const timer = window.setTimeout(() => setStreamCollapsed(true), 800);
+      return () => window.clearTimeout(timer);
+    } else {
+      setStreamCollapsed(false);
+    }
+  }, [step]);
 
   const [animatedTransactionIds, setAnimatedTransactionIds] = useState<
     string[]
@@ -277,6 +289,7 @@ export default function ConnectPage() {
 
   function handleStripeClick() {
     if (launching) return;
+    launchTimeRef.current = Date.now();
     setLaunching(true);
     setTimeout(() => void handleConnect(), 750);
   }
@@ -358,6 +371,15 @@ export default function ConnectPage() {
         );
       });
     } catch (connectError) {
+      if (connectError instanceof ApiError && connectError.status === 401) {
+        // Let the plane animation finish before redirecting to the login page
+        const elapsed = Date.now() - launchTimeRef.current;
+        const remaining = Math.max(0, 1200 - elapsed);
+        if (remaining > 0) await sleep(remaining);
+        router.push("/login");
+        return;
+      }
+      setLaunching(false);
       resetStreamState();
       setStep("idle");
       setBusiness(null);
@@ -475,8 +497,13 @@ export default function ConnectPage() {
                   : "connecting business"}
               </p>
 
-              <div className="flex min-h-0 w-full flex-1 flex-col border border-border bg-background overflow-hidden">
-                <div className="px-4 py-3 border-b border-border">
+              <div
+                className={cn(
+                  "w-full flex-col border border-border bg-background overflow-hidden transition-all duration-700 ease-out",
+                  streamCollapsed ? "flex flex-none" : "flex min-h-0 flex-1"
+                )}
+              >
+                <div className="shrink-0 px-4 py-3 border-b border-border">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">Transactions</p>
@@ -493,76 +520,87 @@ export default function ConnectPage() {
                   </div>
                 </div>
 
-                <div className="border-b border-border bg-background/70 px-4 py-3 text-xs text-muted-foreground transition-all duration-500 ease-out">
-                  {streamStatus}
-                </div>
+                {/* Collapsible body — grid rows trick for smooth height transition */}
+                <div
+                  className={cn(
+                    "transition-[grid-template-rows] duration-700 ease-out",
+                    !streamCollapsed && "flex-1"
+                  )}
+                  style={{ display: "grid", gridTemplateRows: streamCollapsed ? "0fr" : "1fr" }}
+                >
+                  <div className={cn("min-h-0 overflow-hidden", !streamCollapsed && "flex flex-col")}>
+                    <div className="shrink-0 border-b border-border bg-background/70 px-4 py-3 text-xs text-muted-foreground transition-all duration-500 ease-out">
+                      {streamStatus}
+                    </div>
 
-                <div className="runway-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 space-y-2 sm:p-4">
-                  {visibleTransactions.length === 0 &&
-                    (step === "connecting" || step === "analyzing") && (
-                      <div className="animate-settle-in border border-dashed border-border px-4 py-6 text-sm text-muted-foreground flex items-center gap-3 font-mono">
-                        <Loader2 className="size-4 animate-spin shrink-0" />
-                        Categorizing your transactions — first items appear shortly.
-                      </div>
-                    )}
-
-                  {visibleTransactions.map((transaction) => {
-                    const recurrence = formatRecurrence(transaction);
-
-                    return (
-                      <div
-                        key={transaction.id}
-                        className={cn(
-                          "border border-border bg-background px-3 py-2 transition-[transform,box-shadow,border-color,background-color] duration-500 ease-out",
-                          animatedTransactionIds.includes(transaction.id) &&
-                            "animate-settle-in animate-soft-highlight border-border/80"
-                        )}
-                      >
-                        <div className="flex min-w-0 items-center gap-2 text-xs sm:text-sm">
-                          <p
-                            className={`shrink-0 font-semibold ${
-                              transaction.amount < 0
-                                ? "text-red-600"
-                                : "text-green-600"
-                            }`}
-                          >
-                            {formatAmount(transaction.amount)}
-                          </p>
-                          <p className="min-w-0 flex-1 truncate text-foreground">
-                            {transaction.description}
-                          </p>
-                          <div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground sm:text-xs">
-                            <span>{transaction.date}</span>
-                            {transaction.invoice_status === "unpaid" && (
-                              <span className="font-medium text-red-600">
-                                UNPAID
-                              </span>
-                            )}
-                            {recurrence && (
-                              <span className="hidden sm:inline">
-                                {recurrence}
-                              </span>
-                            )}
-                            {transaction.category === null ? (
-                              <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors duration-500 ease-out">
-                                <Loader2 className="size-3 animate-spin" />
-                                categorizing
-                              </span>
-                            ) : (
-                              <span
-                                className={cn(
-                                  "inline-flex px-1.5 py-0.5 text-[10px] font-mono transition-colors duration-500 ease-out",
-                                  categoryBadgeClass(transaction.category)
-                                )}
-                              >
-                                {transaction.category}
-                              </span>
-                            )}
+                    <div className="runway-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 space-y-2 sm:p-4">
+                      {visibleTransactions.length === 0 &&
+                        (step === "connecting" || step === "analyzing") && (
+                          <div className="animate-settle-in border border-dashed border-border px-4 py-6 text-sm text-muted-foreground flex items-center gap-3 font-mono">
+                            <Loader2 className="size-4 animate-spin shrink-0" />
+                            Categorizing your transactions — first items appear shortly.
                           </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                        )}
+
+                      {visibleTransactions.map((transaction) => {
+                        const recurrence = formatRecurrence(transaction);
+
+                        return (
+                          <div
+                            key={transaction.id}
+                            className={cn(
+                              "border border-border bg-background px-3 py-2 transition-[transform,box-shadow,border-color,background-color] duration-500 ease-out",
+                              animatedTransactionIds.includes(transaction.id) &&
+                                "animate-settle-in animate-soft-highlight border-border/80"
+                            )}
+                          >
+                            <div className="flex min-w-0 items-center gap-2 text-xs sm:text-sm">
+                              <p
+                                className={`shrink-0 font-semibold ${
+                                  transaction.amount < 0
+                                    ? "text-red-600"
+                                    : "text-green-600"
+                                }`}
+                              >
+                                {formatAmount(transaction.amount)}
+                              </p>
+                              <p className="min-w-0 flex-1 truncate text-foreground">
+                                {transaction.description}
+                              </p>
+                              <div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground sm:text-xs">
+                                <span>{transaction.date}</span>
+                                {transaction.invoice_status === "unpaid" && (
+                                  <span className="font-medium text-red-600">
+                                    UNPAID
+                                  </span>
+                                )}
+                                {recurrence && (
+                                  <span className="hidden sm:inline">
+                                    {recurrence}
+                                  </span>
+                                )}
+                                {transaction.category === null ? (
+                                  <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors duration-500 ease-out">
+                                    <Loader2 className="size-3 animate-spin" />
+                                    categorizing
+                                  </span>
+                                ) : (
+                                  <span
+                                    className={cn(
+                                      "inline-flex px-1.5 py-0.5 text-[10px] font-mono transition-colors duration-500 ease-out",
+                                      categoryBadgeClass(transaction.category)
+                                    )}
+                                  >
+                                    {transaction.category}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -581,11 +619,15 @@ export default function ConnectPage() {
               )}
 
               {step === "done" && business && (
-                <div className="mt-4">
+                <div className={cn("mt-4 transition-all duration-700", streamCollapsed && "flex-1 flex flex-col justify-center")}>
                   <button
                     onClick={handleContinue}
-                    className="w-full py-3 bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors"
+                    className={cn(
+                      "w-full bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors flex items-center justify-center gap-2",
+                      streamCollapsed ? "py-4 animate-pulse-green-glow" : "py-3"
+                    )}
                   >
+                    {streamCollapsed && <Plane className="size-4 animate-plane-enter" />}
                     View dashboard →
                   </button>
                 </div>
