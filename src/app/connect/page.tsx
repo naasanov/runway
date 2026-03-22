@@ -500,10 +500,11 @@ export default function ConnectPage() {
                     <div className="overflow-hidden">
                       <div className="border-t border-border bg-muted/30 px-5 py-4 flex flex-col gap-3">
                         <div>
-                          <label className="text-xs font-medium block mb-1.5">
+                          <label htmlFor="stripe-account-id" className="text-xs font-medium block mb-1.5">
                             Stripe Account ID
                           </label>
                           <input
+                            id="stripe-account-id"
                             type="text"
                             placeholder="Your Stripe account ID"
                             value={stripeId}
@@ -516,10 +517,11 @@ export default function ConnectPage() {
                           </p>
                         </div>
                         <div>
-                          <label className="text-xs font-medium block mb-1.5">
+                          <label htmlFor="stripe-password" className="text-xs font-medium block mb-1.5">
                             Password
                           </label>
                           <input
+                            id="stripe-password"
                             type="password"
                             placeholder="••••••••"
                             value={stripePassword}
