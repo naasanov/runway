@@ -57,8 +57,8 @@ export function generateStripeTransactions(
       : 2 + Math.floor(Math.random() * 2); // 2-3
     for (let t = 0; t < count; t++) {
       const amount = isWeekend
-        ? Math.round((12 + Math.random() * 30) * 100) / 100
-        : Math.round((8 + Math.random() * 20) * 100) / 100;
+        ? Math.round((16 + Math.random() * 30) * 100) / 100
+        : Math.round((13 + Math.random() * 20) * 100) / 100;
       txns.push({
         id: nextId("txn-str"),
         business_id: businessId,
@@ -177,37 +177,9 @@ export function generateStripeTransactions(
     }
   });
 
-  // ── Durham Catering: wholesale account invoices ───────────────────────────────
-  // Bi-weekly invoices at $8k-12k each so Durham accounts for >60% of total revenue.
-  // This triggers the revenue_concentration red alert.
-  const durhamPaidInvoices = [
-    { amount: 4200, daysBack: 112 },
-    { amount: 4600, daysBack: 98 },
-    { amount: 5100, daysBack: 84 },
-    { amount: 4800, daysBack: 70 },
-    { amount: 4400, daysBack: 56 },
-    { amount: 5000, daysBack: 42 },
-  ];
-  durhamPaidInvoices.forEach(({ amount, daysBack }, i) => {
-    txns.push({
-      id: nextId("txn-dc-paid"),
-      business_id: businessId,
-      source: "stripe",
-      transaction_type: "invoice",
-      invoice_status: "paid",
-      invoice_date: daysAgo(daysBack + 12),
-      customer_id: "cust-durham-catering",
-      amount,
-      description: `Durham Catering Co — Invoice #${1015 + i}`,
-      category: "revenue",
-      date: daysAgo(daysBack),
-      is_recurring: false,
-      recurrence_pattern: null,
-      tags: ["catering", "wholesale", "b2b"],
-    });
-  });
-
-  // ── The critical unpaid invoice: $3,200, 12 days overdue ─────────────────────
+  // ── Durham Catering: single critical overdue invoice only ────────────────────
+  // Keep the overdue-invoice story without creating concentration overlap with
+  // the dedicated agency scenario.
   txns.push({
     id: nextId("txn-dc-unpaid"),
     business_id: businessId,

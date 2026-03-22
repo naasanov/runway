@@ -58,8 +58,8 @@ describe("generateStripeTransactions", () => {
     expect(unpaid.date).toBe(dateInDays(-12));
   });
 
-  it("Durham Catering total revenue (paid + unpaid) accounts for >60% of all positive revenue", () => {
-    // Revenue concentration alert counts all revenue from a customer, including uncollected invoices
+  it("Durham Catering revenue stays below concentration threshold in bakery scenario", () => {
+    // Bakery should still have overdue invoice risk, but concentration belongs to the agency demo.
     const durhamRevenue = txns
       .filter((t) => t.customer_id === "cust-durham-catering" && t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
@@ -68,7 +68,7 @@ describe("generateStripeTransactions", () => {
       .filter((t) => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
 
-    expect(durhamRevenue / totalRevenue).toBeGreaterThan(0.6);
+    expect(durhamRevenue / totalRevenue).toBeLessThan(0.6);
   });
 
   it("has bi-weekly payroll debits of $3,800", () => {
