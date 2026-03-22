@@ -18,6 +18,7 @@ jest.mock("@/lib/api", () => ({
     getAlerts: jest.fn(),
     openAnalyzeStream: jest.fn(),
     getMe: jest.fn(),
+    scheduleCall: jest.fn(),
   },
   ApiError: class ApiError extends Error {
     constructor(
@@ -34,6 +35,7 @@ jest.mock("@/lib/api", () => ({
     getAlerts: jest.fn(),
     openAnalyzeStream: jest.fn(),
     getMe: jest.fn(),
+    scheduleCall: jest.fn(),
   },
 }));
 
@@ -44,6 +46,7 @@ const { __mockApi, runwayApi } = jest.requireMock("@/lib/api") as {
     getAlerts: jest.Mock;
     openAnalyzeStream: jest.Mock;
     getMe: jest.Mock;
+    scheduleCall: jest.Mock;
   };
   runwayApi: {
     connectBusiness: jest.Mock;
@@ -51,6 +54,7 @@ const { __mockApi, runwayApi } = jest.requireMock("@/lib/api") as {
     getAlerts: jest.Mock;
     openAnalyzeStream: jest.Mock;
     getMe: jest.Mock;
+    scheduleCall: jest.Mock;
   };
 };
 
@@ -60,6 +64,7 @@ runwayApi.getDashboard = mockApi.getDashboard;
 runwayApi.getAlerts = mockApi.getAlerts;
 runwayApi.openAnalyzeStream = mockApi.openAnalyzeStream;
 runwayApi.getMe = mockApi.getMe;
+runwayApi.scheduleCall = mockApi.scheduleCall;
 
 describe("ConnectPage", () => {
   beforeEach(() => {
@@ -70,7 +75,9 @@ describe("ConnectPage", () => {
     mockApi.getAlerts.mockReset();
     mockApi.openAnalyzeStream.mockReset();
     mockApi.getMe.mockReset();
+    mockApi.scheduleCall.mockReset();
     mockApi.getMe.mockResolvedValue({ name: "Grace", businessName: "Sweet Grace Bakery", phone: "+19195551234" });
+    mockApi.scheduleCall.mockResolvedValue({ success: true, sentiment: "heavy" });
 
     mockApi.connectBusiness.mockResolvedValue({
       business: {

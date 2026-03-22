@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { alertCall } from '@/scripts/alert-call';
+import { loadDashboardData, DashboardDataError } from '@/lib/dashboard-data';
 import { getAlertMessage } from '@/lib/alert-message';
 import type { AlertSentiment } from '@/lib/alert-message';
 import { env } from '@/lib/env';
-import { badRequest, serverError } from '@/lib/errors';
+import { badRequest, notFound, serverError } from '@/lib/errors';
 
 const CALL_DELAY_MS = 10_000;
 
@@ -26,28 +27,36 @@ function voiceForSentiment(sentiment: AlertSentiment): string {
  *
  * Request body:
  *   toNumber {string}  Required. E.164 phone number to call (e.g. "+15550001234").
+ *   businessId {string} Required. Business whose dashboard data should drive the call.
  *
  * Responses:
  *   200  { success: true, sentiment: "light" | "medium" | "heavy" }
  *   400  { error, code: "MISSING_PHONE" }
+ *   400  { error, code: "MISSING_BUSINESS_ID" }
  *   500  { error, code: "CALL_FAILED" }
  */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const toNumber: string = body?.toNumber;
+  const businessId: string = body?.businessId;
 
   if (!toNumber) return badRequest('toNumber is required', 'MISSING_PHONE');
+  if (!businessId) return badRequest('businessId is required', 'MISSING_BUSINESS_ID');
 
   await new Promise((resolve) => setTimeout(resolve, CALL_DELAY_MS));
 
   try {
-    const { message, sentiment } = await getAlertMessage();
+    const dashboardData = await loadDashboardData(businessId);
+    const { message, sentiment } = await getAlertMessage(dashboardData);
     const voiceId = voiceForSentiment(sentiment);
     console.log(`Alert sentiment: ${sentiment}, voice: ${voiceId}`);
 
     await alertCall(message, toNumber, voiceId);
     return NextResponse.json({ success: true, sentiment });
   } catch (err) {
+    if (err instanceof DashboardDataError && err.code === 'BUSINESS_NOT_FOUND') {
+      return notFound(err.message, err.code);
+    }
     console.error('Scheduled alert call failed:', err);
     return serverError('Failed to place scheduled alert call', 'CALL_FAILED');
   }

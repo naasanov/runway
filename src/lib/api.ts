@@ -79,8 +79,8 @@ export const runwayApi = {
   getMe: () => api.get<MeResponse>('/api/auth/me'),
   triggerCall: (message: string, toNumber?: string) =>
     api.post<CallAlertResponse>('/api/alerts/call', { message, toNumber }),
-  scheduleCall: (toNumber: string) =>
-    api.post<CallAlertResponse>('/api/alerts/scheduled-call', { toNumber }),
+  scheduleCall: (toNumber: string, businessId: string) =>
+    api.post<CallAlertResponse>('/api/alerts/scheduled-call', { toNumber, businessId }),
   sendReminder: (body: {
     business_id: string;
     customer_id: string;
