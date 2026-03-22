@@ -262,6 +262,10 @@ export interface SendSmsResponse {
   message_preview: string;
 }
 
+export interface CallAlertResponse {
+  success: boolean;
+}
+
 export interface SendReminderResponse {
   sent: boolean;
   sent_at: string;

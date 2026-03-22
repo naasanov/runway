@@ -11,6 +11,7 @@ export class ApiError extends Error {
 
 import type {
   AlertsResponse,
+  CallAlertResponse,
   AnalyzeBatchCompletedEvent,
   AnalyzeBatchStartedEvent,
   AnalyzeCompletedEvent,
@@ -74,6 +75,8 @@ export const runwayApi = {
     api.get<AlertsResponse>(`/api/business/${businessId}/alerts`),
   modelScenario: (body: ScenarioRequest) =>
     api.post<ScenarioResponse>("/api/scenario/model", body),
+  triggerCall: (message: string, toNumber?: string) =>
+    api.post<CallAlertResponse>('/api/alerts/call', { message, toNumber }),
   sendReminder: (body: {
     business_id: string;
     customer_id: string;
