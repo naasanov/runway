@@ -6,11 +6,12 @@ import type {
   DashboardResponse,
   RecommendedAction,
   Severity,
+  Transaction,
 } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -25,45 +26,26 @@ import {
 const DASHBOARD_RETRY_COUNT = 4;
 const DASHBOARD_RETRY_DELAY_MS = 350;
 
-// Color system: red = bad, amber/orange = mediocre, green = good
 const COLORS = {
   red: {
     hex: "#dc2626",
-    bg: "bg-red-50",
-    bgStrong: "bg-red-600",
-    border: "border-red-200",
-    borderStrong: "border-red-500",
-    text: "text-red-700",
-    textStrong: "text-red-600",
+    text: "text-red-600",
     accent: "border-l-red-500",
     dot: "bg-red-500",
-    badge: "bg-red-100 text-red-700 border border-red-200",
     meter: "bg-red-500",
   },
   amber: {
     hex: "#d97706",
-    bg: "bg-amber-50",
-    bgStrong: "bg-amber-500",
-    border: "border-amber-200",
-    borderStrong: "border-amber-400",
-    text: "text-amber-700",
-    textStrong: "text-amber-600",
+    text: "text-amber-600",
     accent: "border-l-amber-400",
     dot: "bg-amber-400",
-    badge: "bg-amber-100 text-amber-700 border border-amber-200",
     meter: "bg-amber-400",
   },
   green: {
     hex: "#166534",
-    bg: "bg-green-50",
-    bgStrong: "bg-green-700",
-    border: "border-green-200",
-    borderStrong: "border-green-500",
-    text: "text-green-800",
-    textStrong: "text-green-700",
+    text: "text-green-700",
     accent: "border-l-green-600",
     dot: "bg-green-500",
-    badge: "bg-green-100 text-green-800 border border-green-200",
     meter: "bg-green-600",
   },
 } as const;
@@ -82,27 +64,16 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function SectionHeader({
-  index,
-  label,
-  action,
-}: {
-  index: string;
-  label: string;
-  action?: React.ReactNode;
-}) {
+function SectionHeader({ index, label }: { index: string; label: string }) {
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-muted-foreground tracking-[0.15em]">
-            #{index} ·
-          </span>
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">
-            {label}
-          </span>
-        </div>
-        {action}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-mono text-muted-foreground tracking-[0.15em]">
+          #{index} ·
+        </span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.1em]">
+          {label}
+        </span>
       </div>
       <div className="mt-1.5 border-b border-border/50" />
     </div>
@@ -121,7 +92,45 @@ function isHydratedDashboard(data: DashboardResponse): boolean {
   );
 }
 
-// Chart tooltip
+// Scroll reveal hook — fades in when 20% of element is visible
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, visible };
+}
+
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const { ref, visible } = useScrollReveal();
+  return (
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`transition-all duration-700 ease-out ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
 function ChartTooltip({
   active,
   payload,
@@ -136,26 +145,18 @@ function ChartTooltip({
   return (
     <div className="bg-background border border-border px-3 py-2 text-xs shadow-md">
       <p className="font-semibold text-foreground mb-1">{label}</p>
-      <p
-        className={`font-mono font-bold ${val < 0 ? "text-red-600" : "text-foreground"}`}
-      >
+      <p className={`font-mono font-bold ${val < 0 ? "text-red-600" : "text-foreground"}`}>
         {formatCurrency(val)}
       </p>
     </div>
   );
 }
 
-function CashFlowChart({
-  days,
-}: {
-  days: DashboardResponse["forecast_summary"]["days"];
-}) {
+function CashFlowChart({ days }: { days: DashboardResponse["forecast_summary"]["days"] }) {
   const chartData = days.map((day) => ({
     label: format(parseISO(day.date), "MMM d"),
     balance: Math.round(day.projected_balance),
-    isDanger: day.is_danger,
   }));
-
   const hasNegative = chartData.some((d) => d.balance < 0);
   const strokeColor = hasNegative ? COLORS.red.hex : COLORS.green.hex;
 
@@ -168,11 +169,7 @@ function CashFlowChart({
             <stop offset="100%" stopColor={strokeColor} stopOpacity={0.01} />
           </linearGradient>
         </defs>
-        <CartesianGrid
-          strokeDasharray="2 4"
-          stroke="hsl(var(--border))"
-          vertical={false}
-        />
+        <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
         <XAxis
           dataKey="label"
           tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
@@ -182,21 +179,14 @@ function CashFlowChart({
         />
         <YAxis
           tickFormatter={(v: number) =>
-            Math.abs(v) >= 1000
-              ? `$${(v / 1000).toFixed(0)}k`
-              : `$${v}`
+            Math.abs(v) >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
           }
           tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
           tickLine={false}
           axisLine={false}
           width={44}
         />
-        <ReferenceLine
-          y={0}
-          stroke={COLORS.red.hex}
-          strokeDasharray="4 2"
-          strokeWidth={1.5}
-        />
+        <ReferenceLine y={0} stroke={COLORS.red.hex} strokeDasharray="4 2" strokeWidth={1.5} />
         <RechartsTooltip content={<ChartTooltip />} />
         <Area
           type="monotone"
@@ -218,6 +208,7 @@ export default function DashboardPage() {
   const businessId = searchParams.get("b");
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     if (!businessId) {
@@ -259,7 +250,28 @@ export default function DashboardPage() {
       }
     }
 
+    async function loadTransactions() {
+      try {
+        const res = await fetch(
+          `/api/mock/stripe/transactions?business_id=${selectedBusinessId}`
+        );
+        if (res.ok) {
+          const json = (await res.json()) as { transactions: Transaction[] };
+          if (!cancelled) {
+            setTransactions(
+              [...json.transactions]
+                .sort((a, b) => b.date.localeCompare(a.date))
+                .slice(0, 20)
+            );
+          }
+        }
+      } catch {
+        // non-critical — silently skip
+      }
+    }
+
     void loadDashboard();
+    void loadTransactions();
     return () => { cancelled = true; };
   }, [businessId, router]);
 
@@ -271,10 +283,18 @@ export default function DashboardPage() {
     [data]
   );
 
-  const recommendedActions = useMemo<RecommendedAction[]>(
+  const topAction = useMemo<RecommendedAction | null>(
+    () => headlineAlert?.recommended_actions[0] ?? null,
+    [headlineAlert]
+  );
+
+  const remainingActions = useMemo<RecommendedAction[]>(
     () =>
-      data?.alerts.flatMap((a) => a.recommended_actions).slice(0, 4) ?? [],
-    [data]
+      data?.alerts
+        .flatMap((a) => a.recommended_actions)
+        .filter((a) => a !== topAction)
+        .slice(0, 4) ?? [],
+    [data, topAction]
   );
 
   if (!businessId) {
@@ -283,13 +303,7 @@ export default function DashboardPage() {
         <main className="max-w-3xl mx-auto px-6 py-16">
           <div className="border border-border p-6">
             <p className="font-medium">No business selected.</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Connect a business first.
-            </p>
-            <Link
-              href="/connect"
-              className="inline-flex mt-4 px-4 py-2 bg-foreground text-background text-sm font-medium"
-            >
+            <Link href="/connect" className="inline-flex mt-4 px-4 py-2 bg-foreground text-background text-sm font-medium">
               Go to connect
             </Link>
           </div>
@@ -303,9 +317,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-background pb-mobile-nav">
         <Nav businessId={businessId} />
         <main className="max-w-6xl mx-auto px-6 py-8">
-          <div className="border border-border p-6 text-red-600">
-            {error}
-          </div>
+          <div className="border border-border p-6 text-red-600">{error}</div>
         </main>
       </div>
     );
@@ -316,13 +328,12 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-background pb-mobile-nav">
         <Nav businessId={businessId} />
         <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-          <div className="h-20 bg-muted animate-pulse" />
-          <div className="h-48 bg-muted animate-pulse" />
+          <div className="h-[50vh] bg-muted animate-pulse" />
+          <div className="h-32 bg-muted animate-pulse" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 h-72 bg-muted animate-pulse" />
             <div className="h-72 bg-muted animate-pulse" />
           </div>
-          <div className="h-36 bg-muted animate-pulse" />
         </main>
       </div>
     );
@@ -338,31 +349,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background pb-mobile-nav">
       <Nav businessId={businessId} />
 
-      {/* Crisis / warning banner — colored bg, white text only (no secondary color text) */}
-      {isCritical && (
-        <div className="bg-red-600 border-b border-red-700">
-          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
-            <p className="text-white text-sm font-medium">
-              <span className="font-bold">Cash crisis:</span>{" "}
-              {runwayDays} days of runway remaining
-              {headlineAlert && ` — ${headlineAlert.headline}`}
-            </p>
-          </div>
-        </div>
-      )}
-      {isWarning && (
-        <div className="bg-amber-500 border-b border-amber-600">
-          <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-white shrink-0" />
-            <p className="text-white text-sm font-medium">
-              Cash runway is low — {runwayDays} days remaining at current burn rate.
-            </p>
-          </div>
-        </div>
-      )}
-
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-10">
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-12">
 
         {/* Header */}
         <header>
@@ -372,237 +359,241 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight">{data.business.name}</h1>
         </header>
 
-        {/* #01 · Cash Runway */}
-        <section>
+        {/* #01 · Cash Runway — ~50vh, dominant */}
+        <section className="min-h-[50vh] flex flex-col justify-center border-l-4 border border-l-0 border-border pl-0">
           <SectionHeader index="01" label="Cash Runway" />
-          <div className={`bg-background border border-border border-l-4 ${sc.accent} relative overflow-hidden`}>
 
-            {/* Runway meter bar at bottom */}
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-border/20">
+          <div className={`border-l-4 ${sc.accent} pl-8 py-4`}>
+            {/* Severity label — colored text, no banner */}
+            <p className={`text-xs font-mono font-bold uppercase tracking-[0.2em] mb-4 ${sc.text}`}>
+              {isCritical ? "⚠ runway alert" : isWarning ? "▲ low runway" : "✓ runway healthy"}
+            </p>
+
+            {/* Giant number */}
+            <div className="flex items-baseline gap-6 mb-2">
+              <span
+                className={`font-black font-mono tabular-nums leading-none ${sc.text} ${isCritical ? "animate-pulse" : ""}`}
+                style={{ fontSize: "clamp(6rem, 18vw, 14rem)" }}
+              >
+                {runwayDays}
+              </span>
+              <div>
+                <p className="text-2xl font-bold text-foreground">days of cash</p>
+                <p className="text-sm text-muted-foreground">at current burn rate</p>
+              </div>
+            </div>
+
+            {/* Meter bar */}
+            <div className="w-full h-1 bg-border/30 mt-6 mb-6">
               <div
                 className={`h-full ${sc.meter} transition-all duration-700`}
                 style={{ width: `${meterPct}%` }}
               />
             </div>
 
-            <div className="p-6">
-              <div className="flex items-start gap-5 mb-5">
-                {/* Big number */}
-                <div className="flex items-baseline gap-3">
-                  <span
-                    className={`text-8xl font-black font-mono tabular-nums leading-none ${sc.text} ${isCritical ? "animate-pulse" : ""}`}
-                  >
-                    {runwayDays}
-                  </span>
-                  <div>
-                    <p className="text-base font-bold text-foreground">days of cash</p>
-                    <p className="text-xs text-muted-foreground">at current burn rate</p>
-                    <div className={`inline-flex mt-2 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border border-border text-muted-foreground`}>
-                      {isCritical ? "critical" : isWarning ? "warning" : "healthy"}
-                    </div>
+            {/* KPI row */}
+            <div className="flex items-center gap-10">
+              <KpiStat label="Current Balance" value={formatCurrency(data.business.current_balance)} />
+              {data.forecast_summary.min_projected_balance < 0 && (
+                <KpiStat
+                  label="Lowest Projected"
+                  value={formatCurrency(data.forecast_summary.min_projected_balance)}
+                  danger
+                />
+              )}
+              <KpiStat label="Forecast Window" value={`${data.forecast_summary.horizon_days} days`} />
+            </div>
+          </div>
+        </section>
+
+        {/* Top Alert + Top Action — immediately after runway */}
+        {headlineAlert && (
+          <Reveal>
+            <SectionHeader index="02" label="Top Alert" />
+            <div className={`border border-border border-l-4 ${sc.accent} p-6`}>
+              <div className="flex items-start gap-3 mb-3">
+                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${sc.dot} ${isCritical ? "animate-pulse" : ""}`} />
+                <div className="flex-1">
+                  <p className={`font-bold text-base leading-snug ${sc.text}`}>
+                    {headlineAlert.headline}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                    {headlineAlert.detail}
+                  </p>
+                </div>
+              </div>
+
+              {/* Top action inline */}
+              {topAction && (
+                <div className="mt-4 pt-4 border-t border-border flex items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1">
+                      recommended action
+                    </p>
+                    <p className="text-sm font-semibold">
+                      {topAction.action}
+                      {topAction.target && (
+                        <span className="text-muted-foreground font-normal"> · {topAction.target}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{topAction.impact}</p>
+                  </div>
+                  <div className={`text-base font-mono font-black tabular-nums shrink-0 ${topAction.amount > 0 ? "text-green-700" : "text-red-600"}`}>
+                    {topAction.amount > 0 ? "+" : ""}{formatCurrency(topAction.amount)}
                   </div>
                 </div>
-
-                {/* Headline alert callout — neutral bg, colored text only */}
-                {headlineAlert && (
-                  <div className="ml-auto max-w-sm p-4 border border-border">
-                    <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-1">
-                      top alert
-                    </p>
-                    <p className={`text-sm font-semibold leading-snug ${sc.text}`}>
-                      {headlineAlert.headline}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* KPI row */}
-              <div className="flex items-center gap-8 border-t border-border/40 pt-4">
-                <KpiStat
-                  label="Current Balance"
-                  value={formatCurrency(data.business.current_balance)}
-                />
-                {data.forecast_summary.min_projected_balance < 0 && (
-                  <KpiStat
-                    label="Lowest Projected"
-                    value={formatCurrency(data.forecast_summary.min_projected_balance)}
-                    danger
-                  />
-                )}
-                <KpiStat
-                  label="Forecast Horizon"
-                  value={`${data.forecast_summary.horizon_days} days`}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* #02 · Active Alerts */}
-        <section>
-          <SectionHeader index="02" label="Active Alerts" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {data.alerts.map((alert) => (
-              <AlertCard
-                key={alert.id}
-                severity={alert.severity}
-                headline={alert.headline}
-                detail={alert.detail}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* #03 · Cash Forecast chart + #04 · Upcoming Obligations */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <SectionHeader
-              index="03"
-              label={`${data.forecast_summary.horizon_days}-Day Cash Forecast`}
-            />
-            <div className="border border-border p-4 pb-2">
-              <CashFlowChart days={data.forecast_summary.days} />
-              {data.forecast_summary.min_projected_balance < 0 && (
-                <p className="text-[10px] font-mono text-red-500 mt-2 text-center tracking-wider">
-                  balance goes negative — red line = $0
-                </p>
               )}
             </div>
-          </div>
+          </Reveal>
+        )}
 
-          <div>
-            <SectionHeader index="04" label="Upcoming Obligations" />
-            <div className="border border-border divide-y divide-border">
-              {data.upcoming_obligations.map((item, i) => {
-                const isDanger = data.forecast_summary.danger_dates.includes(item.due_date);
+        {/* #03 · Active Alerts */}
+        {data.alerts.length > 0 && (
+          <Reveal>
+            <SectionHeader index="03" label="Active Alerts" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {data.alerts.map((alert) => {
+                const asc = getColors(alert.severity);
                 return (
                   <div
-                    key={`${item.description}-${item.due_date}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm"
+                    key={alert.id}
+                    className={`bg-background border border-border border-l-4 ${asc.accent} p-5`}
                   >
-                    <span className="text-[10px] font-mono text-muted-foreground w-4 tabular-nums shrink-0">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{item.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(parseISO(item.due_date), "MMM d")}
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${asc.dot} ${alert.severity === "red" ? "animate-pulse" : ""}`} />
+                      <p className={`font-semibold text-sm leading-snug ${asc.text}`}>
+                        {alert.headline}
                       </p>
                     </div>
-                    <span
-                      className={`font-mono font-semibold tabular-nums text-sm shrink-0 ${isDanger ? "text-red-600" : "text-foreground"}`}
-                    >
-                      {formatCurrency(item.amount)}
+                    <p className="text-xs text-muted-foreground pl-5 leading-relaxed">
+                      {alert.detail}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Reveal>
+        )}
+
+        {/* #04 · Cash Forecast + #05 · Upcoming Obligations */}
+        <Reveal>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <SectionHeader
+                index="04"
+                label={`${data.forecast_summary.horizon_days}-Day Cash Forecast`}
+              />
+              <div className="border border-border p-4 pb-2">
+                <CashFlowChart days={data.forecast_summary.days} />
+                {data.forecast_summary.min_projected_balance < 0 && (
+                  <p className="text-[10px] font-mono text-red-500 mt-2 text-center tracking-wider">
+                    balance goes negative — red line = $0
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <SectionHeader index="05" label="Upcoming Obligations" />
+              <div className="border border-border divide-y divide-border">
+                {data.upcoming_obligations.map((item, i) => {
+                  const isDanger = data.forecast_summary.danger_dates.includes(item.due_date);
+                  return (
+                    <div key={`${item.description}-${item.due_date}`} className="flex items-center gap-3 px-4 py-3 text-sm">
+                      <span className="text-[10px] font-mono text-muted-foreground w-4 tabular-nums shrink-0">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(parseISO(item.due_date), "MMM d")}
+                        </p>
+                      </div>
+                      <span className={`font-mono font-semibold tabular-nums text-sm shrink-0 ${isDanger ? "text-red-600" : "text-foreground"}`}>
+                        {formatCurrency(item.amount)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* #06 · Recommended Actions */}
+        {remainingActions.length > 0 && (
+          <Reveal>
+            <SectionHeader index="06" label="Recommended Actions" />
+            <div className="border border-border divide-y divide-border">
+              {remainingActions.map((action, index) => (
+                <div key={`${action.action}-${index}`} className="flex items-start gap-4 px-4 py-4">
+                  <span className="text-[10px] font-mono text-muted-foreground w-4 tabular-nums mt-0.5 shrink-0">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">
+                      {action.action}
+                      {action.target && (
+                        <span className="text-muted-foreground font-normal"> · {action.target}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{action.impact}</p>
+                  </div>
+                  <div className={`shrink-0 text-sm font-mono font-bold tabular-nums ${action.amount > 0 ? "text-green-700" : "text-red-600"}`}>
+                    {action.amount > 0 ? "+" : ""}{formatCurrency(action.amount)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        )}
+
+        {/* #07 · Transaction History */}
+        {transactions.length > 0 && (
+          <Reveal>
+            <SectionHeader index="07" label="Transaction History" />
+            <div className="border border-border divide-y divide-border">
+              {transactions.map((txn) => {
+                const isCredit = txn.transaction_type === "credit";
+                const isUnpaid = txn.invoice_status === "unpaid";
+                return (
+                  <div key={txn.id} className="flex items-center gap-4 px-4 py-3 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{txn.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(parseISO(txn.date), "MMM d, yyyy")}
+                        {txn.category && (
+                          <span className="ml-2 font-mono">{txn.category}</span>
+                        )}
+                        {isUnpaid && (
+                          <span className="ml-2 text-red-600 font-semibold">unpaid</span>
+                        )}
+                      </p>
+                    </div>
+                    <span className={`font-mono font-semibold tabular-nums shrink-0 ${isCredit ? "text-green-700" : "text-foreground"}`}>
+                      {isCredit ? "+" : "−"}{formatCurrency(Math.abs(txn.amount))}
                     </span>
                   </div>
                 );
               })}
             </div>
-          </div>
-        </div>
-
-        {/* #05 · Recommended Actions */}
-        <section>
-          <SectionHeader index="05" label="Recommended Actions" />
-          <div className="border border-border divide-y divide-border">
-            {recommendedActions.map((action, index) => (
-              <ActionRow
-                key={`${action.action}-${index}`}
-                index={index}
-                action={action}
-                total={recommendedActions.length}
-              />
-            ))}
-          </div>
-        </section>
+          </Reveal>
+        )}
 
       </main>
     </div>
   );
 }
 
-function KpiStat({
-  label,
-  value,
-  danger,
-}: {
-  label: string;
-  value: string;
-  danger?: boolean;
-}) {
+function KpiStat({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
     <div>
       <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.15em]">
         {label}
       </p>
-      <p
-        className={`text-xl font-mono font-bold tabular-nums mt-0.5 ${danger ? "text-red-600" : "text-foreground"}`}
-      >
+      <p className={`text-xl font-mono font-bold tabular-nums mt-0.5 ${danger ? "text-red-600" : "text-foreground"}`}>
         {value}
       </p>
-    </div>
-  );
-}
-
-function AlertCard({
-  severity,
-  headline,
-  detail,
-}: {
-  severity: Severity;
-  headline: string;
-  detail: string;
-}) {
-  const sc = getColors(severity);
-
-  return (
-    <div className={`bg-background border border-border border-l-4 ${sc.accent} p-5`}>
-      <div className="flex items-start gap-3 mb-2">
-        <div
-          className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${sc.dot} ${severity === "red" ? "animate-pulse" : ""}`}
-        />
-        <p className={`font-semibold text-sm leading-snug ${sc.text}`}>
-          {headline}
-        </p>
-      </div>
-      <p className="text-xs text-muted-foreground pl-5 leading-relaxed">
-        {detail}
-      </p>
-    </div>
-  );
-}
-
-function ActionRow({
-  index,
-  action,
-  total,
-}: {
-  index: number;
-  action: RecommendedAction;
-  total: number;
-}) {
-  const isPositive = action.amount > 0;
-  return (
-    <div
-      className={`flex items-start gap-4 px-4 py-4 ${index < total - 1 ? "" : ""}`}
-    >
-      <span className="text-[10px] font-mono text-muted-foreground w-4 tabular-nums mt-0.5 shrink-0">
-        {String(index + 1).padStart(2, "0")}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">
-          {action.action}
-          {action.target ? (
-            <span className="text-muted-foreground font-normal"> · {action.target}</span>
-          ) : null}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">{action.impact}</p>
-      </div>
-      <div
-        className={`shrink-0 text-sm font-mono font-bold tabular-nums ${isPositive ? "text-green-700" : "text-red-600"}`}
-      >
-        {isPositive ? "+" : ""}{formatCurrency(action.amount)}
-      </div>
     </div>
   );
 }
