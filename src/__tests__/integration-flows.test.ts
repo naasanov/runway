@@ -500,7 +500,35 @@ describe("integration flow: connect rollback on import failure", () => {
 });
 
 describe("integration smoke: stubbed Dev 4 routes", () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
   it("alerts route returns a valid alerts payload shape", async () => {
+    store.businesses.push({
+      id: "biz-test",
+      name: "Sweet Grace Bakery",
+      type: "bakery",
+      owner_phone: "+19195551234",
+      stripe_connected: true,
+      banking_connected: true,
+      current_balance: 4847.23,
+      runway_days: 22,
+      runway_severity: "red",
+    });
+    store.alerts.push({
+      id: "alert-1",
+      business_id: "biz-test",
+      scenario: "runway",
+      severity: "red",
+      headline: "You have 22 days of cash remaining at current burn rate.",
+      detail: "Critical runway warning.",
+      recommended_actions: [],
+      sms_sent: false,
+      sms_sent_at: null,
+      created_at: "2026-03-21T10:00:00Z",
+    });
+
     const alertsUrl = new URL("http://localhost/api/business/biz-test/alerts");
     const alertsReq = Object.assign(
       new Request(alertsUrl.toString(), { method: "GET" }),
