@@ -49,6 +49,8 @@ type AlertRow = {
   created_at: string;
 };
 
+type RowRecord = Record<string, unknown>;
+
 const store = {
   businesses: [] as BusinessRow[],
   transactions: [] as TransactionRow[],
@@ -79,15 +81,15 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
 }
 
-function getTable(table: string) {
+function getTable(table: string): RowRecord[] {
   if (table === "businesses") {
-    return store.businesses;
+    return store.businesses as RowRecord[];
   }
   if (table === "transactions") {
-    return store.transactions;
+    return store.transactions as RowRecord[];
   }
   if (table === "alerts") {
-    return store.alerts;
+    return store.alerts as RowRecord[];
   }
   throw new Error(`Unsupported table ${table}`);
 }
@@ -163,7 +165,7 @@ function makeDeleteBuilder(table: string) {
   return {
     eq(field: string, value: unknown) {
       for (let index = rows.length - 1; index >= 0; index -= 1) {
-        if (rows[index][field] === value) {
+        if ((rows[index] as RowRecord)[field] === value) {
           rows.splice(index, 1);
         }
       }
@@ -499,7 +501,14 @@ describe("integration flow: connect rollback on import failure", () => {
 
 describe("integration smoke: stubbed Dev 4 routes", () => {
   it("alerts route returns a valid alerts payload shape", async () => {
-    const res = await alertsGET();
+    const alertsUrl = new URL("http://localhost/api/business/biz-test/alerts");
+    const alertsReq = Object.assign(
+      new Request(alertsUrl.toString(), { method: "GET" }),
+      { nextUrl: alertsUrl },
+    );
+    const res = await alertsGET(alertsReq as never, {
+      params: { id: "biz-test" },
+    });
     expect(res.status).toBe(200);
 
     const body = await res.json();
