@@ -540,7 +540,7 @@ export default function ConnectPage() {
                             {transaction.category === null ? (
                               <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors duration-500 ease-out">
                                 <Loader2 className="size-3 animate-spin" />
-                                …
+                                categorizing
                               </span>
                             ) : (
                               <span
