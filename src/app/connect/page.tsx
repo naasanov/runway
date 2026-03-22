@@ -139,6 +139,7 @@ export default function ConnectPage() {
   const [ownerPhone, setOwnerPhone] = useState<string | null>(null);
   const [step, setStep] = useState<ConnectStep>("idle");
   const [launching, setLaunching] = useState(false);
+  const [dashboardLaunching, setDashboardLaunching] = useState(false);
   const [streamCollapsed, setStreamCollapsed] = useState(false);
   const [collapseBodyHeight, setCollapseBodyHeight] = useState<number | null>(null);
   const [stripeId, setStripeId] = useState("");
@@ -165,6 +166,11 @@ export default function ConnectPage() {
   useEffect(() => {
     void runwayApi.getMe().then((me) => setOwnerPhone(me.phone)).catch(() => null);
   }, []);
+
+  // Prefetch dashboard page so navigation is instant
+  useEffect(() => {
+    router.prefetch("/dashboard");
+  }, [router]);
 
   useEffect(() => {
     return () => {
@@ -468,7 +474,7 @@ export default function ConnectPage() {
   }
 
   function handleContinue() {
-    if (!business) return;
+    if (!business || dashboardLaunching) return;
     localStorage.setItem(
       `runway_scenario_${business.id}`,
       stripeId === CONCENTRATION_STRIPE_ID ? "concentration" : "bakery"
@@ -476,7 +482,8 @@ export default function ConnectPage() {
     if (ownerPhone) {
       void runwayApi.scheduleCall(ownerPhone, business.id).catch(() => null);
     }
-    router.push(`/dashboard?b=${business.id}`);
+    setDashboardLaunching(true);
+    setTimeout(() => router.push(`/dashboard?b=${business.id}`), 750);
   }
 
   return (
@@ -784,10 +791,17 @@ export default function ConnectPage() {
                     View dashboard
                     <div className="ml-auto relative size-6 shrink-0">
                       <ArrowRight
-                        className={`size-4 text-background absolute inset-0 m-auto transition-all duration-200 ${streamCollapsed ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                        className={`size-4 text-background absolute inset-0 m-auto transition-all duration-200 ${dashboardLaunching || streamCollapsed ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
                       />
                       <RunwayLogoIcon
-                        className={`size-6 text-background absolute inset-0 ${streamCollapsed ? "animate-logo-launch" : "opacity-0"}`}
+                        className={cn(
+                          "size-6 text-background absolute inset-0",
+                          dashboardLaunching
+                            ? "animate-logo-launch"
+                            : streamCollapsed
+                              ? "opacity-100"
+                              : "opacity-0"
+                        )}
                       />
                     </div>
                   </button>
