@@ -4,8 +4,8 @@
  * "9-days-to-payroll-miss" story stays accurate on any run date.
  */
 
-import type { Transaction } from "./types";
 import { randomUUID } from "crypto";
+import type { Transaction } from "./types";
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────
 

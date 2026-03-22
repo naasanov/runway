@@ -48,6 +48,17 @@ export default function DashboardPage() {
       try {
         setError(null);
         const response = await runwayApi.getDashboard(selectedBusinessId);
+
+        if (
+          response.business.runway_days == null &&
+          response.alerts.length === 0 &&
+          response.upcoming_obligations.length === 0
+        ) {
+          throw new Error(
+            "Dashboard returned no runway, no alerts, and no upcoming obligations."
+          );
+        }
+
         if (!cancelled) {
           setData(response);
         }
@@ -56,7 +67,9 @@ export default function DashboardPage() {
           setError(
             dashboardError instanceof ApiError
               ? dashboardError.message
-              : "We couldn't load the dashboard."
+              : dashboardError instanceof Error
+                ? dashboardError.message
+                : "We couldn't load the dashboard."
           );
         }
       }

@@ -159,6 +159,42 @@ function makeInsertBuilder(table: string, payload: Record<string, unknown> | Rec
   };
 }
 
+function makeUpsertBuilder(
+  table: string,
+  payload: Record<string, unknown> | Record<string, unknown>[],
+  options?: { onConflict?: string },
+) {
+  const rows = getTable(table);
+  const records = clone(Array.isArray(payload) ? payload : [payload]);
+  const conflictField = options?.onConflict ?? "id";
+
+  records.forEach((record) => {
+    const existingIndex = rows.findIndex(
+      (row) => (row as RowRecord)[conflictField] === record[conflictField],
+    );
+
+    if (existingIndex >= 0) {
+      rows[existingIndex] = {
+        ...rows[existingIndex],
+        ...record,
+      };
+      return;
+    }
+
+    rows.push(record);
+  });
+
+  return {
+    select() {
+      return Promise.resolve({
+        data: clone(records),
+        error: null,
+      });
+    },
+    error: null,
+  };
+}
+
 function makeDeleteBuilder(table: string) {
   const rows = getTable(table);
 
@@ -214,6 +250,10 @@ jest.mock("@/lib/supabase", () => ({
       insert: jest.fn((payload: Record<string, unknown> | Record<string, unknown>[]) =>
         makeInsertBuilder(table, payload),
       ),
+      upsert: jest.fn((
+        payload: Record<string, unknown> | Record<string, unknown>[],
+        options?: { onConflict?: string },
+      ) => makeUpsertBuilder(table, payload, options)),
       update: jest.fn((payload: Record<string, unknown>) =>
         makeUpdateBuilder(table, payload),
       ),

@@ -53,7 +53,6 @@ export default function ConnectPage() {
       setImportedCount(connectResponse.transactions_imported);
 
       const dashboardData = await runwayApi.getDashboard(connectResponse.business.id);
-      const alertData = await runwayApi.getAlerts(connectResponse.business.id);
 
       const lines = getStreamLines([
         ...dashboardData.forecast_summary.days.flatMap((day) =>
@@ -86,17 +85,40 @@ export default function ConnectPage() {
 
       try {
         const analyzeResponse = await runwayApi.analyzeBusiness(connectResponse.business.id);
+        const hydratedDashboard = await runwayApi.getDashboard(connectResponse.business.id);
+        const hydratedAlerts = await runwayApi.getAlerts(connectResponse.business.id);
         const overdueInvoiceAlert = analyzeResponse.alerts_created.find(
           (alert) => alert.scenario === "overdue_invoice"
         );
-        setWarning(overdueInvoiceAlert?.headline ?? null);
-      } catch (analyzeError) {
-        const fallbackWarning = alertData.alerts.find(
-          (alert) => alert.scenario === "overdue_invoice"
-        );
+
+        if (
+          analyzeResponse.alerts_created.length === 0 &&
+          hydratedDashboard.alerts.length === 0 &&
+          hydratedAlerts.alerts.length === 0
+        ) {
+          throw new Error(
+            `Analysis categorized ${analyzeResponse.transactions_categorized} transactions, but returned 0 alerts and the dashboard/alerts endpoints are both empty.`
+          );
+        }
+
         setWarning(
-          fallbackWarning?.headline ?? "Imported data successfully. Analysis is still pending."
+          overdueInvoiceAlert?.headline ??
+            hydratedAlerts.alerts[0]?.headline ??
+            hydratedDashboard.alerts[0]?.headline ??
+            `Analysis completed with ${analyzeResponse.alerts_created.length} alerts.`
         );
+      } catch (analyzeError) {
+        setStep("idle");
+        setVisibleLines([]);
+        setWarning(null);
+        setError(
+          analyzeError instanceof ApiError
+            ? `Analysis failed: ${analyzeError.message}`
+            : analyzeError instanceof Error
+              ? analyzeError.message
+              : "Analysis completed with invalid dashboard data."
+        );
+        return;
       }
 
       window.setTimeout(() => {

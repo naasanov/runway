@@ -307,6 +307,25 @@ describe("POST /api/business/:id/analyze — categorization", () => {
     const body = await res.json();
     expect(body.code).toBe("ANALYZE_FAILED");
   });
+
+  it("falls back to deterministic demo categorization when Gemini is unavailable", async () => {
+    mockGenerateContent.mockRejectedValue(new Error("503 Service Unavailable"));
+
+    const res = await callAnalyze();
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.transactions_categorized).toBe(3);
+
+    const payroll = bulkCategorizationWrites.find((row) => row.id === "txn-001");
+    expect(payroll).toEqual(
+      expect.objectContaining({
+        category: "payroll",
+        is_recurring: true,
+        recurrence_pattern: "biweekly",
+      })
+    );
+  });
 });
 
 describe("POST /api/business/:id/analyze — prompt quality", () => {

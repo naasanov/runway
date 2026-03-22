@@ -1,4 +1,8 @@
 import { notFound, serverError } from "@/lib/errors";
+import {
+  inferDemoCategorizationBatch,
+  isGeminiServiceUnavailable,
+} from "@/lib/demo-fallback";
 import { computeForecast } from "@/lib/forecast";
 import type {
   AnalyzeResponse,
@@ -202,24 +206,37 @@ export async function POST(
       batch_size: stripped.length,
     });
 
-    const response = await gemini.generateContent([
-      SYSTEM_PROMPT,
-      `Categorize these ${stripped.length} transactions:\n${JSON.stringify(stripped)}`,
-    ]);
+    try {
+      const response = await gemini.generateContent([
+        SYSTEM_PROMPT,
+        `Categorize these ${stripped.length} transactions:\n${JSON.stringify(stripped)}`,
+      ]);
 
-    const text = response.response.text();
-    const cleaned = text
-      .replace(/```json?\n?/g, "")
-      .replace(/```/g, "")
-      .trim();
-    const parsed: GeminiCategorizationResult[] = JSON.parse(cleaned);
+      const text = response.response.text();
+      const cleaned = text
+        .replace(/```json?\n?/g, "")
+        .replace(/```/g, "")
+        .trim();
+      const parsed: GeminiCategorizationResult[] = JSON.parse(cleaned);
 
-    logAnalyze(businessId, "gemini_batch_done", {
-      batch: batchNumber,
-      parsed_count: parsed.length,
-    });
+      logAnalyze(businessId, "gemini_batch_done", {
+        batch: batchNumber,
+        parsed_count: parsed.length,
+      });
 
-    return parsed;
+      return parsed;
+    } catch (error) {
+      if (isGeminiServiceUnavailable(error)) {
+        const fallback = inferDemoCategorizationBatch(batch);
+        logAnalyze(businessId, "gemini_batch_fallback", {
+          batch: batchNumber,
+          fallback_count: fallback.length,
+        });
+        return fallback;
+      }
+
+      throw error;
+    }
   }
 
   try {
