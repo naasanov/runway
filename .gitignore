@@ -43,3 +43,7 @@ next-env.d.ts
 .aider*
 .copilot/
 .codeium/
+
+# tmp files
+/tmp_audio/*
+!/tmp_audio/.gitkeep

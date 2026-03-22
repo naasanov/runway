@@ -8,6 +8,12 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string(),
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
   NEXT_PUBLIC_BASE_URL: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string(),
+  ELEVENLABS_VOICE_ID: z.string().default('21m00Tcm4TlvDq8ikWAM'),
+  TWILIO_ACCOUNT_SID: z.string(),
+  TWILIO_AUTH_TOKEN: z.string(),
+  TWILIO_FROM_NUMBER: z.string(),
+  ALERT_PHONE_NUMBER: z.string(),
 });
 
 type Env = z.infer<typeof envSchema>;
