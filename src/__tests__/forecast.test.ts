@@ -1,5 +1,5 @@
 /**
- * Tests for GET /api/business/:id/forecast (Dev 2 — D2-02)
+ * Tests for GET /api/business/:id/forecast (Dev 2 — D2-02 / D2-03)
  *
  * Supabase is mocked so these run without external services.
  */
@@ -20,6 +20,9 @@ const mockBusiness = {
   id: BUSINESS_ID,
   current_balance: 5000,
 };
+
+const businessUpdatePayloads: Record<string, unknown>[] = [];
+const mockBusinessUpdate = jest.fn();
 
 const mockTransactions: Partial<Transaction>[] = [
   // Recurring payroll every 2 weeks, $3800
@@ -94,6 +97,14 @@ jest.mock("@/lib/supabase", () => ({
               }),
             })),
           })),
+          update: jest.fn((data: Record<string, unknown>) => {
+            businessUpdatePayloads.push(data);
+            return {
+              eq: mockBusinessUpdate.mockResolvedValue({
+                error: null,
+              }),
+            };
+          }),
         };
       }
       if (table === "transactions") {
@@ -133,6 +144,11 @@ function callForecast(businessId = BUSINESS_ID, horizon?: number) {
 // ─── tests ───────────────────────────────────────────────────────────────────
 
 describe("GET /api/business/:id/forecast", () => {
+  beforeEach(() => {
+    mockBusinessUpdate.mockClear();
+    businessUpdatePayloads.length = 0;
+  });
+
   it("returns 200 with correct response shape", async () => {
     const res = await callForecast();
     expect(res.status).toBe(200);
@@ -255,5 +271,24 @@ describe("GET /api/business/:id/forecast", () => {
     const res = await callForecast();
     const body = await res.json();
     expect(body.current_balance).toBe(mockBusiness.current_balance);
+  });
+
+  it("persists runway_days and runway_severity back to the business record", async () => {
+    const res = await callForecast();
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockBusinessUpdate).toHaveBeenCalledWith("id", BUSINESS_ID);
+    expect(businessUpdatePayloads).toHaveLength(1);
+    expect(businessUpdatePayloads[0]).toEqual({
+      runway_days: body.runway_days,
+      runway_severity:
+        body.runway_days < 30
+          ? "red"
+          : body.runway_days < 60
+            ? "amber"
+            : "green",
+    });
+    expect(body.runway_days).toBeGreaterThanOrEqual(0);
   });
 });

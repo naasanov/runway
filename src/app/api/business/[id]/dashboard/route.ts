@@ -1,67 +1,66 @@
 import { NextResponse } from "next/server";
-import type { DashboardResponse } from "@/lib/types";
+import type {
+  Alert,
+  DashboardResponse,
+  Transaction,
+} from "@/lib/types";
+import { computeForecast } from "@/lib/forecast";
+import { notFound, serverError } from "@/lib/errors";
 
-// TODO: implement — Dev 2 owns this
-export async function GET(): Promise<NextResponse<DashboardResponse>> {
+export async function GET(
+  _req: Request,
+  { params }: { params: { id: string } },
+): Promise<NextResponse<DashboardResponse>> {
+  const { supabase } = await import("@/lib/supabase");
+  const businessId = params.id;
+
+  const [{ data: business, error: businessError }, { data: transactions, error: transactionsError }, { data: alerts, error: alertsError }] =
+    await Promise.all([
+      supabase
+        .from("businesses")
+        .select("id, name, current_balance, runway_days, runway_severity")
+        .eq("id", businessId)
+        .single(),
+      supabase.from("transactions").select("*").eq("business_id", businessId),
+      supabase
+        .from("alerts")
+        .select("*")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+  if (businessError || !business) {
+    return notFound("Business not found.", "BUSINESS_NOT_FOUND") as never;
+  }
+
+  if (transactionsError || alertsError) {
+    return serverError(
+      "Failed to load dashboard data.",
+      "DASHBOARD_LOAD_FAILED",
+    ) as never;
+  }
+
+  const forecast = computeForecast(
+    (transactions ?? []) as Transaction[],
+    business.current_balance,
+    30,
+  );
+
   return NextResponse.json({
     business: {
-      id: "biz-sweet-grace-001",
-      name: "Sweet Grace Bakery",
-      current_balance: 4847.23,
-      runway_days: 47,
-      runway_severity: "amber",
+      id: business.id,
+      name: business.name,
+      current_balance: business.current_balance,
+      runway_days: business.runway_days,
+      runway_severity: business.runway_severity,
     },
-    alerts: [
-      {
-        id: "alert-0091",
-        business_id: "biz-sweet-grace-001",
-        scenario: "runway",
-        severity: "amber",
-        headline: "You have 47 days of cash remaining at current burn rate.",
-        detail:
-          "Average daily net burn: $102.07. At this rate, cash runs out around May 7.",
-        recommended_actions: [
-          {
-            action: "Collect overdue invoice",
-            target: "Durham Catering Co",
-            amount: 3200,
-            impact: "Extends runway to 78 days",
-          },
-        ],
-        sms_sent: false,
-        sms_sent_at: null,
-        created_at: "2026-03-21T02:00:00Z",
-      },
-    ],
+    alerts: (alerts ?? []) as Alert[],
     forecast_summary: {
       horizon_days: 30,
-      min_projected_balance: -2200.0,
-      danger_dates: ["2026-03-28"],
-      days: [
-        {
-          date: "2026-03-22",
-          projected_balance: 4847.23,
-          is_danger: false,
-          obligations: [],
-          expected_revenue: 480.0,
-        },
-      ],
+      min_projected_balance: forecast.minProjectedBalance,
+      danger_dates: forecast.dangerDates,
+      days: forecast.days,
     },
-    upcoming_obligations: [
-      {
-        description: "Payroll",
-        amount: 3800.0,
-        due_date: "2026-03-28",
-        category: "payroll",
-        is_recurring: true,
-      },
-      {
-        description: "Quarterly Insurance",
-        amount: 1200.0,
-        due_date: "2026-03-28",
-        category: "insurance",
-        is_recurring: true,
-      },
-    ],
+    upcoming_obligations: forecast.upcomingObligations,
   });
 }

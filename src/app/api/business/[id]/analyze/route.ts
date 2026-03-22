@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { AnalyzeResponse, Transaction, Category, RecurrencePattern } from "@/lib/types";
 import { CATEGORIES, RECURRENCE_PATTERNS } from "@/lib/types";
 import { notFound, serverError } from "@/lib/errors";
+import { computeForecast } from "@/lib/forecast";
 
 const BATCH_SIZE = 50;
 
@@ -33,6 +34,49 @@ interface GeminiCategorizationResult {
   category: string;
   is_recurring: boolean;
   recurrence_pattern: string | null;
+}
+
+async function recomputeRunway(
+  businessId: string,
+): Promise<{ runway_days: number; runway_severity: "red" | "amber" | "green" }> {
+  const { supabase } = await import("@/lib/supabase");
+
+  const [{ data: business, error: businessError }, { data: transactions, error: transactionsError }] =
+    await Promise.all([
+      supabase
+        .from("businesses")
+        .select("id, current_balance")
+        .eq("id", businessId)
+        .single(),
+      supabase.from("transactions").select("*").eq("business_id", businessId),
+    ]);
+
+  if (businessError || !business || transactionsError) {
+    throw new Error("RUNWAY_RECOMPUTE_FAILED");
+  }
+
+  const forecast = computeForecast(
+    (transactions ?? []) as Transaction[],
+    business.current_balance,
+    30,
+  );
+
+  const { error: updateError } = await supabase
+    .from("businesses")
+    .update({
+      runway_days: forecast.runwayDays,
+      runway_severity: forecast.runwaySeverity,
+    })
+    .eq("id", businessId);
+
+  if (updateError) {
+    throw new Error("RUNWAY_RECOMPUTE_FAILED");
+  }
+
+  return {
+    runway_days: forecast.runwayDays,
+    runway_severity: forecast.runwaySeverity,
+  };
 }
 
 export async function POST(
@@ -68,21 +112,23 @@ export async function POST(
   }
 
   if (!transactions || transactions.length === 0) {
-    // Nothing to categorize — return current state
-    const { data: biz } = await supabase
-      .from("businesses")
-      .select("runway_days, runway_severity")
-      .eq("id", businessId)
-      .single();
+    try {
+      const runway = await recomputeRunway(businessId);
 
-    return NextResponse.json<AnalyzeResponse>({
-      business_id: businessId,
-      transactions_categorized: 0,
-      runway_days: biz?.runway_days ?? 0,
-      runway_severity: biz?.runway_severity ?? "green",
-      alerts_created: [],
-      sms_sent: false,
-    });
+      return NextResponse.json<AnalyzeResponse>({
+        business_id: businessId,
+        transactions_categorized: 0,
+        runway_days: runway.runway_days,
+        runway_severity: runway.runway_severity,
+        alerts_created: [],
+        sms_sent: false,
+      });
+    } catch {
+      return serverError(
+        "Failed to recompute runway.",
+        "RUNWAY_RECOMPUTE_FAILED",
+      );
+    }
   }
 
   // Batch transactions and send to Gemini
@@ -152,51 +198,56 @@ export async function POST(
     }
   }
 
-  // TODO: D2-02/D2-03 will add forecast + runway calculation here
+  try {
+    const runway = await recomputeRunway(businessId);
+    const { detectRunwayAlert, writeAlertToDb, clearExistingAlerts } = await import(
+      "@/lib/alert-scenarios"
+    );
 
-  // --- D4: Alert scenario detection ---
-  const { detectRunwayAlert, writeAlertToDb, clearExistingAlerts } = await import(
-    "@/lib/alert-scenarios"
-  );
+    // Clear old alerts before generating new ones
+    await clearExistingAlerts(supabase, businessId);
 
-  // Clear old alerts before generating new ones
-  await clearExistingAlerts(supabase, businessId);
+    // Fetch current business state after runway has been recomputed
+    const { data: currentBiz } = await supabase
+      .from("businesses")
+      .select("id, current_balance, runway_days, runway_severity")
+      .eq("id", businessId)
+      .single();
 
-  // Fetch current business state (runway_days written by D2's forecast)
-  const { data: currentBiz } = await supabase
-    .from("businesses")
-    .select("id, current_balance, runway_days, runway_severity")
-    .eq("id", businessId)
-    .single();
+    const alertsCreated: AnalyzeResponse["alerts_created"] = [];
 
-  const alertsCreated: AnalyzeResponse["alerts_created"] = [];
-
-  // Scenario 1: Runway alert
-  if (currentBiz) {
-    const runwayAlert = detectRunwayAlert(currentBiz);
-    if (runwayAlert) {
-      const written = await writeAlertToDb(supabase, runwayAlert);
-      if (written) {
-        alertsCreated.push({
-          id: written.id,
-          scenario: written.scenario,
-          severity: written.severity,
-          headline: written.headline,
-        });
+    // Scenario 1: Runway alert
+    if (currentBiz) {
+      const runwayAlert = detectRunwayAlert(currentBiz);
+      if (runwayAlert) {
+        const written = await writeAlertToDb(supabase, runwayAlert);
+        if (written) {
+          alertsCreated.push({
+            id: written.id,
+            scenario: written.scenario,
+            severity: written.severity,
+            headline: written.headline,
+          });
+        }
       }
     }
+
+    // TODO: D4-03 Scenario 2 — Overdue Invoice
+    // TODO: D4-04 Scenario 3 — Subscription Waste
+    // TODO: D4-05 Scenario 4 — Revenue Concentration
+
+    return NextResponse.json<AnalyzeResponse>({
+      business_id: businessId,
+      transactions_categorized: categorized,
+      runway_days: runway.runway_days,
+      runway_severity: runway.runway_severity,
+      alerts_created: alertsCreated,
+      sms_sent: false,
+    });
+  } catch {
+    return serverError(
+      "Failed to recompute runway.",
+      "RUNWAY_RECOMPUTE_FAILED",
+    );
   }
-
-  // TODO: D4-03 Scenario 2 — Overdue Invoice
-  // TODO: D4-04 Scenario 3 — Subscription Waste
-  // TODO: D4-05 Scenario 4 — Revenue Concentration
-
-  return NextResponse.json<AnalyzeResponse>({
-    business_id: businessId,
-    transactions_categorized: categorized,
-    runway_days: currentBiz?.runway_days ?? 0,
-    runway_severity: currentBiz?.runway_severity ?? "green",
-    alerts_created: alertsCreated,
-    sms_sent: false,
-  });
 }
