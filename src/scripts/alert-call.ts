@@ -18,7 +18,7 @@ const AUDIO_DIR = path.join(process.cwd(), 'public', 'tmp_audio');
 async function generateSpeech(message: string): Promise<string> {
   console.log(`🎙  Generating speech...`);
 
-  const fullText = `Automated message from Runway: ${message}. Automated message from Runway: ${message}.`;
+  const fullText = `Automated message from Runway: ${message}.`;
 
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
@@ -76,6 +76,7 @@ export async function alertCall(message: string, toNumber?: string): Promise<voi
     to,
     from: TWILIO_FROM_NUMBER,
     twiml,
+    machineDetection: 'DetectMessageEnd',
   });
 
   console.log(`✅ Call initiated! SID: ${call.sid} | Status: ${call.status}`);

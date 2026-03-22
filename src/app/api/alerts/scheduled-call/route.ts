@@ -3,17 +3,15 @@ import { alertCall } from '@/scripts/alert-call';
 import { badRequest, serverError } from '@/lib/errors';
 
 const CALL_DELAY_MS = 10_000;
-
-// Hardcoded for now — will be replaced with a dynamic message API call
-const ALERT_MESSAGE =
-  'Automated message from Runway. Your business cash runway needs attention. ' +
+const FALLBACK_MESSAGE =
+  'Your business cash runway needs attention. ' +
   'Please log in to your Runway dashboard to review your latest financial alerts.';
 
 /**
  * POST /api/alerts/scheduled-call
  *
- * Waits CALL_DELAY_MS then places an ElevenLabs + Twilio voice call to the
- * given number with a pre-generated alert message.
+ * Waits CALL_DELAY_MS, fetches the alert message from GET /api/alerts/message,
+ * then places an ElevenLabs + Twilio voice call to the given number.
  *
  * Request body:
  *   toNumber {string}  Required. E.164 phone number to call (e.g. "+15550001234").
@@ -35,7 +33,16 @@ export async function POST(req: NextRequest) {
   await new Promise((resolve) => setTimeout(resolve, CALL_DELAY_MS));
 
   try {
-    await alertCall(ALERT_MESSAGE, toNumber);
+    // Fetch the message from the message API
+    const origin = req.nextUrl.origin;
+    const msgRes = await fetch(`${origin}/api/alerts/message`);
+    let message = FALLBACK_MESSAGE;
+    if (msgRes.ok) {
+      const msgBody = (await msgRes.json()) as { message?: string };
+      if (msgBody.message) message = msgBody.message;
+    }
+
+    await alertCall(message, toNumber);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Scheduled alert call failed:', err);

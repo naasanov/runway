@@ -374,6 +374,9 @@ export default function ConnectPage() {
 
   function handleContinue() {
     if (!business) return;
+    if (ownerPhone) {
+      void runwayApi.scheduleCall(ownerPhone);
+    }
     router.push(`/dashboard?b=${business.id}`);
   }
 
