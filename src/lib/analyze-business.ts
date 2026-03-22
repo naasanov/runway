@@ -318,6 +318,7 @@ async function runPostProcessing(
     detectRunwayAlert,
     detectOverdueInvoiceAlerts,
     detectSubscriptionWasteAlerts,
+    detectRevenueConcentrationAlert,
     writeAlertToDb,
     clearExistingAlerts,
   } = await import("@/lib/alert-scenarios");
@@ -394,6 +395,15 @@ async function runPostProcessing(
   );
   for (const alert of subscriptionAlerts) {
     await persistAlert(alert);
+  }
+
+  logAnalyze(businessId, "detecting_revenue_concentration_alert");
+  const revenueConcentrationAlert = detectRevenueConcentrationAlert(
+    businessId,
+    allTransactions,
+  );
+  if (revenueConcentrationAlert) {
+    await persistAlert(revenueConcentrationAlert);
   }
 
   const { count: alertCountAfterWrite, error: alertCountError } = await supabase

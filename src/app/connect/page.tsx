@@ -16,6 +16,11 @@ import { useEffect, useRef, useState } from "react";
 
 const DEFAULT_BUSINESS_NAME = "Sweet Grace Bakery";
 const DEFAULT_BUSINESS_TYPE = "bakery";
+const CONCENTRATION_BUSINESS_NAME = "Apex Digital Consulting";
+const CONCENTRATION_BUSINESS_TYPE = "agency";
+const BAKERY_STRIPE_ID = "88888888";
+const CONCENTRATION_STRIPE_ID = "77777777";
+const DEMO_PASSWORD = "password";
 const POST_ANALYZE_RETRY_COUNT = 5;
 const POST_ANALYZE_RETRY_DELAY_MS = 400;
 const STREAM_REVEAL_DELAY_MS = 130;
@@ -95,6 +100,29 @@ function formatRecurrence(
   return transaction.recurrence_pattern;
 }
 
+function isSupportedDemoStripeAccount(accountId: string): boolean {
+  return (
+    accountId === BAKERY_STRIPE_ID || accountId === CONCENTRATION_STRIPE_ID
+  );
+}
+
+function resolveScenarioBusiness(accountId: string): {
+  businessName: string;
+  businessType: string;
+} {
+  if (accountId === CONCENTRATION_STRIPE_ID) {
+    return {
+      businessName: CONCENTRATION_BUSINESS_NAME,
+      businessType: CONCENTRATION_BUSINESS_TYPE,
+    };
+  }
+
+  return {
+    businessName: DEFAULT_BUSINESS_NAME,
+    businessType: DEFAULT_BUSINESS_TYPE,
+  };
+}
+
 export default function ConnectPage() {
   const router = useRouter();
   const streamCleanupRef = useRef<(() => void) | null>(null);
@@ -108,7 +136,6 @@ export default function ConnectPage() {
   const streamBodyRef = useRef<HTMLDivElement>(null);
 
   const [ownerPhone, setOwnerPhone] = useState<string | null>(null);
-  const [businessName, setBusinessName] = useState<string | null>(null);
   const [step, setStep] = useState<ConnectStep>("idle");
   const [launching, setLaunching] = useState(false);
   const [streamCollapsed, setStreamCollapsed] = useState(false);
@@ -130,11 +157,12 @@ export default function ConnectPage() {
     "Waiting to import transactions…"
   );
 
+  const selectedDemoBusinessName = isSupportedDemoStripeAccount(stripeId)
+    ? resolveScenarioBusiness(stripeId).businessName
+    : "your business";
+
   useEffect(() => {
-    void runwayApi.getMe().then((me) => {
-      setOwnerPhone(me.phone);
-      if (me.businessName) setBusinessName(me.businessName);
-    }).catch(() => null);
+    void runwayApi.getMe().then((me) => setOwnerPhone(me.phone)).catch(() => null);
   }, []);
 
   useEffect(() => {
@@ -317,8 +345,13 @@ export default function ConnectPage() {
 
   function handleStripeClick() {
     if (!stripeReady || launching) return;
-    if (stripeId !== "88888888" || stripePassword !== "password") {
-      setStripeError("Invalid Stripe credentials. Check your account ID and password.");
+    if (
+      !isSupportedDemoStripeAccount(stripeId) ||
+      stripePassword !== DEMO_PASSWORD
+    ) {
+      setStripeError(
+        "Invalid Stripe credentials. Use account ID 88888888 or 77777777 with password 'password'."
+      );
       return;
     }
     setStripeError(null);
@@ -337,10 +370,16 @@ export default function ConnectPage() {
       setStreamStatus("Importing transactions from connected accounts…");
       setStep("connecting");
 
+      const {
+        businessName: scenarioBusinessName,
+        businessType: scenarioBusinessType,
+      } = resolveScenarioBusiness(stripeId);
+
       const connectResponse = await runwayApi.connectBusiness({
-        business_name: businessName ?? DEFAULT_BUSINESS_NAME,
-        business_type: DEFAULT_BUSINESS_TYPE,
+        business_name: scenarioBusinessName,
+        business_type: scenarioBusinessType,
         owner_phone: ownerPhone ?? "",
+        stripe_account_id: stripeId || undefined,
       });
       setBusiness(connectResponse.business);
       setImportedCount(connectResponse.transactions_imported);
@@ -429,6 +468,10 @@ export default function ConnectPage() {
 
   function handleContinue() {
     if (!business) return;
+    localStorage.setItem(
+      `runway_scenario_${business.id}`,
+      stripeId === CONCENTRATION_STRIPE_ID ? "concentration" : "bakery"
+    );
     if (ownerPhone) {
       void runwayApi.scheduleCall(ownerPhone, business.id).catch(() => null);
     }
@@ -455,7 +498,17 @@ export default function ConnectPage() {
                 {"// connect_business"}
               </p>
               <h1 className="text-2xl font-bold tracking-tight mb-2">
-                Connect {businessName ?? DEFAULT_BUSINESS_NAME}
+                Connect{" "}
+                <span
+                  className={cn(
+                    "transition-all duration-200",
+                    isSupportedDemoStripeAccount(stripeId)
+                      ? "blur-0"
+                      : "blur-[2px]"
+                  )}
+                >
+                  {selectedDemoBusinessName}
+                </span>
               </h1>
               <p className="text-muted-foreground text-sm mb-8 max-w-sm leading-relaxed">
                 We&apos;ll import your transaction history, categorize

@@ -305,6 +305,95 @@ No markdown, no explanation.`,
 }
 
 // ---------------------------------------------------------------------------
+// Scenario 4 — Revenue Concentration
+// ---------------------------------------------------------------------------
+
+function humanizeCustomerId(customerId: string): string {
+  return customerId
+    .replace(/^cust-/, "")
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function detectRevenueConcentrationAlert(
+  businessId: string,
+  transactions: Transaction[]
+): AlertDraft | null {
+  const revenueTransactions = transactions.filter(
+    (txn) =>
+      txn.category === "revenue" &&
+      txn.amount > 0 &&
+      typeof txn.customer_id === "string" &&
+      txn.customer_id.length > 0
+  );
+
+  if (revenueTransactions.length === 0) return null;
+
+  const revenueByCustomer = new Map<string, number>();
+
+  for (const txn of revenueTransactions) {
+    const customerId = txn.customer_id!;
+    revenueByCustomer.set(
+      customerId,
+      (revenueByCustomer.get(customerId) ?? 0) + txn.amount
+    );
+  }
+
+  if (revenueByCustomer.size === 0) return null;
+
+  const totalRevenue = Array.from(revenueByCustomer.values()).reduce(
+    (sum, value) => sum + value,
+    0
+  );
+  if (totalRevenue <= 0) return null;
+
+  let topCustomerId = "";
+  let topCustomerRevenue = 0;
+
+  for (const [customerId, revenue] of Array.from(revenueByCustomer.entries())) {
+    if (revenue > topCustomerRevenue) {
+      topCustomerId = customerId;
+      topCustomerRevenue = revenue;
+    }
+  }
+
+  const concentrationShare = topCustomerRevenue / totalRevenue;
+  if (concentrationShare <= 0.6) return null;
+
+  const severity: Severity = concentrationShare > 0.75 ? "red" : "amber";
+  const concentrationPercent = (concentrationShare * 100).toFixed(1);
+  const customerName = humanizeCustomerId(topCustomerId);
+
+  const headline = `${concentrationPercent}% of your revenue came from one client: ${customerName}.`;
+  const detail = `Trailing customer concentration is ${concentrationPercent}%. A loss or delay from ${customerName} would create significant cash-flow risk.`;
+
+  const actions: RecommendedAction[] = [
+    {
+      action: "Diversify client base",
+      target: "Revenue mix",
+      amount: 0,
+      impact: "Reduce dependency on a single customer over the next quarter",
+    },
+    {
+      action: "Lock in second anchor client",
+      target: "Pipeline",
+      amount: 0,
+      impact: "Create a stable backup revenue stream if your top client churns",
+    },
+  ];
+
+  return createAlert(
+    businessId,
+    "revenue_concentration",
+    severity,
+    headline,
+    detail,
+    actions
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Helpers for writing alerts to DB
 // ---------------------------------------------------------------------------
 

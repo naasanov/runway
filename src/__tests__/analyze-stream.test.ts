@@ -218,6 +218,7 @@ jest.mock("@/lib/alert-scenarios", () => ({
   })),
   detectOverdueInvoiceAlerts: jest.fn(() => []),
   detectSubscriptionWasteAlerts: jest.fn(async () => []),
+  detectRevenueConcentrationAlert: jest.fn(() => null),
   clearExistingAlerts: jest.fn(async () => {}),
   writeAlertToDb: jest.fn(async (_supabase: unknown, alert: Record<string, unknown>) => ({
     ...alert,
