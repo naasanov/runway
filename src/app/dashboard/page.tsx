@@ -271,11 +271,28 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {/* #02 · Active Alerts */}
+        <section>
+          <SectionHeader index="02" label="Active Alerts" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-border">
+            {data.alerts.map((alert, i) => (
+              <AlertCard
+                key={alert.id}
+                severity={alert.severity}
+                headline={alert.headline}
+                detail={alert.detail}
+                index={i}
+                total={data.alerts.length}
+              />
+            ))}
+          </div>
+        </section>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* #02 · Cash Forecast */}
+          {/* #03 · Cash Forecast */}
           <div className="lg:col-span-2">
             <SectionHeader
-              index="02"
+              index="03"
               label={`${data.forecast_summary.horizon_days}-Day Cash Forecast`}
             />
             <div className="space-y-0 border border-border">
@@ -318,9 +335,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* #03 · Upcoming Obligations */}
+          {/* #04 · Upcoming Obligations */}
           <div>
-            <SectionHeader index="03" label="Upcoming Obligations" />
+            <SectionHeader index="04" label="Upcoming Obligations" />
             <div className="space-y-0 border border-border">
               {data.upcoming_obligations.map((item, i) => {
                 const isDanger = data.forecast_summary.danger_dates.includes(item.due_date);
@@ -353,23 +370,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* #04 · Active Alerts */}
-        <section>
-          <SectionHeader index="04" label="Active Alerts" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-border">
-            {data.alerts.map((alert, i) => (
-              <AlertCard
-                key={alert.id}
-                severity={alert.severity}
-                headline={alert.headline}
-                detail={alert.detail}
-                index={i}
-                total={data.alerts.length}
-              />
-            ))}
-          </div>
-        </section>
 
         {/* #05 · Recommended Actions */}
         <section>
