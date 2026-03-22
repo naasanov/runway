@@ -20,6 +20,16 @@ const config: Config = {
       testEnvironment: "jsdom",
       preset: "ts-jest",
       testMatch: ["<rootDir>/src/**/*.test.tsx"],
+      transform: {
+        "^.+\\.(ts|tsx)$": [
+          "ts-jest",
+          {
+            tsconfig: {
+              jsx: "react-jsx",
+            },
+          },
+        ],
+      },
       moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
       },

@@ -227,7 +227,9 @@ export default function DashboardPage() {
         let response = await runwayApi.getDashboard(selectedBusinessId);
 
         for (let attempt = 1; attempt < DASHBOARD_RETRY_COUNT; attempt += 1) {
-          if (isHydratedDashboard(response)) break;
+          if (isHydratedDashboard(response)) {
+            break;
+          }
           await sleep(DASHBOARD_RETRY_DELAY_MS);
           response = await runwayApi.getDashboard(selectedBusinessId);
         }
