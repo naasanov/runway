@@ -54,6 +54,13 @@ export async function GET(
     30
   );
 
+  console.log(`[dashboard:${businessId}] payload_summary`, {
+    runway_days: business.runway_days,
+    runway_severity: business.runway_severity,
+    transaction_count: (transactions ?? []).length,
+    alert_count: (alerts ?? []).length,
+  });
+
   return NextResponse.json({
     business: {
       id: business.id,
