@@ -11,7 +11,13 @@ export class ApiError extends Error {
 
 import type {
   AlertsResponse,
+  AnalyzeBatchCompletedEvent,
+  AnalyzeBatchStartedEvent,
+  AnalyzeCompletedEvent,
+  AnalyzeFailedEvent,
+  AnalyzeFallbackUsedEvent,
   AnalyzeResponse,
+  AnalyzeStartedEvent,
   ConnectRequest,
   ConnectResponse,
   DashboardResponse,
@@ -19,6 +25,16 @@ import type {
   ScenarioResponse,
   SendReminderResponse,
 } from "./types";
+
+export interface AnalyzeStreamHandlers {
+  onAnalysisStarted?: (event: AnalyzeStartedEvent) => void;
+  onBatchStarted?: (event: AnalyzeBatchStartedEvent) => void;
+  onBatchCompleted?: (event: AnalyzeBatchCompletedEvent) => void;
+  onFallbackUsed?: (event: AnalyzeFallbackUsedEvent) => void;
+  onAnalysisCompleted?: (event: AnalyzeCompletedEvent) => void;
+  onAnalysisFailed?: (event: AnalyzeFailedEvent) => void;
+  onError?: (error: Error) => void;
+}
 
 async function request<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",
@@ -64,4 +80,84 @@ export const runwayApi = {
     invoice_transaction_id: string;
     amount_owed: number;
   }) => api.post<SendReminderResponse>("/api/actions/send-reminder", body),
+  openAnalyzeStream: (
+    businessId: string,
+    handlers: AnalyzeStreamHandlers,
+  ): (() => void) => {
+    const source = new EventSource(`/api/business/${businessId}/analyze/stream`);
+    let closed = false;
+    let completed = false;
+
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      source.close();
+    };
+
+    const attach = <T>(
+      eventName: string,
+      handler: ((event: T) => void) | undefined,
+      terminal = false,
+    ) => {
+      source.addEventListener(eventName, (event) => {
+        if (!handler) {
+          if (terminal) {
+            completed = true;
+            close();
+          }
+          return;
+        }
+
+        try {
+          handler(JSON.parse((event as MessageEvent<string>).data) as T);
+          if (terminal) {
+            completed = true;
+            close();
+          }
+        } catch (error) {
+          close();
+          handlers.onError?.(
+            error instanceof Error
+              ? error
+              : new Error("Failed to parse analysis stream event."),
+          );
+        }
+      });
+    };
+
+    attach<AnalyzeStartedEvent>(
+      "analysis_started",
+      handlers.onAnalysisStarted,
+    );
+    attach<AnalyzeBatchStartedEvent>(
+      "batch_started",
+      handlers.onBatchStarted,
+    );
+    attach<AnalyzeBatchCompletedEvent>(
+      "batch_completed",
+      handlers.onBatchCompleted,
+    );
+    attach<AnalyzeFallbackUsedEvent>(
+      "fallback_used",
+      handlers.onFallbackUsed,
+    );
+    attach<AnalyzeCompletedEvent>(
+      "analysis_completed",
+      handlers.onAnalysisCompleted,
+      true,
+    );
+    attach<AnalyzeFailedEvent>(
+      "analysis_failed",
+      handlers.onAnalysisFailed,
+      true,
+    );
+
+    source.onerror = () => {
+      if (closed || completed) return;
+      close();
+      handlers.onError?.(new Error("Analysis stream disconnected."));
+    };
+
+    return close;
+  },
 };

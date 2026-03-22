@@ -1,37 +1,36 @@
-import { NextResponse } from "next/server";
-import type {
-  Alert,
-  DashboardResponse,
-  Transaction,
-} from "@/lib/types";
-import { computeForecast } from "@/lib/forecast";
 import { notFound, serverError } from "@/lib/errors";
+import { computeForecast } from "@/lib/forecast";
+import type { Alert, DashboardResponse, Transaction } from "@/lib/types";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: { id: string } }
 ): Promise<NextResponse<DashboardResponse>> {
   const { supabase } = await import("@/lib/supabase");
   const businessId = params.id;
 
   console.log(`[dashboard:${businessId}] start`);
 
-  const [{ data: business, error: businessError }, { data: transactions, error: transactionsError }, { data: alerts, error: alertsError }] =
-    await Promise.all([
-      supabase
-        .from("businesses")
-        .select("id, name, current_balance, runway_days, runway_severity")
-        .eq("id", businessId)
-        .single(),
-      supabase.from("transactions").select("*").eq("business_id", businessId),
-      supabase
-        .from("alerts")
-        .select("*")
-        .eq("business_id", businessId)
-        .order("created_at", { ascending: false }),
-    ]);
+  const [
+    { data: business, error: businessError },
+    { data: transactions, error: transactionsError },
+    { data: alerts, error: alertsError },
+  ] = await Promise.all([
+    supabase
+      .from("businesses")
+      .select("id, name, current_balance, runway_days, runway_severity")
+      .eq("id", businessId)
+      .single(),
+    supabase.from("transactions").select("*").eq("business_id", businessId),
+    supabase
+      .from("alerts")
+      .select("*")
+      .eq("business_id", businessId)
+      .order("created_at", { ascending: false }),
+  ]);
 
   if (businessError || !business) {
     console.log(`[dashboard:${businessId}] business_not_found`);
@@ -45,24 +44,15 @@ export async function GET(
     });
     return serverError(
       "Failed to load dashboard data.",
-      "DASHBOARD_LOAD_FAILED",
+      "DASHBOARD_LOAD_FAILED"
     ) as never;
   }
 
   const forecast = computeForecast(
     (transactions ?? []) as Transaction[],
     business.current_balance,
-    30,
+    30
   );
-
-  console.log(`[dashboard:${businessId}] payload_summary`, {
-    runway_days: business.runway_days,
-    runway_severity: business.runway_severity,
-    transaction_count: (transactions ?? []).length,
-    alert_count: (alerts ?? []).length,
-    upcoming_obligations: forecast.upcomingObligations.length,
-    danger_dates: forecast.dangerDates.length,
-  });
 
   return NextResponse.json({
     business: {

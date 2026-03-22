@@ -107,6 +107,10 @@ jest.mock("@/lib/supabase", () => {
                     data: mockTransactions,
                     error: null,
                   }),
+                  not: jest.fn().mockResolvedValue({
+                    count: mockTransactions.length,
+                    error: null,
+                  }),
                 };
 
                 return Object.assign(
@@ -136,6 +140,12 @@ jest.mock("@/lib/supabase", () => {
         }
         if (table === "alerts") {
           return {
+            select: jest.fn(() => ({
+              eq: jest.fn().mockResolvedValue({
+                count: 0,
+                error: null,
+              }),
+            })),
             insert: jest.fn().mockResolvedValue({ error: null }),
             delete: jest.fn(() => ({
               eq: jest.fn().mockResolvedValue({ error: null }),
@@ -156,6 +166,21 @@ jest.mock("@/lib/gemini", () => ({
   gemini: {
     generateContent: (...args: unknown[]) => mockGenerateContent(...args),
   },
+}));
+
+jest.mock("@/lib/alert-scenarios", () => ({
+  detectRunwayAlert: jest.fn(() => null),
+  detectOverdueInvoiceAlerts: jest.fn(() => []),
+  detectSubscriptionWasteAlerts: jest.fn(async () => []),
+  clearExistingAlerts: jest.fn(async () => {}),
+  writeAlertToDb: jest.fn(
+    async (_supabase: unknown, alert: Record<string, unknown>) => ({
+      ...alert,
+      sms_sent: false,
+      sms_sent_at: null,
+      created_at: "2026-03-22T10:00:00.000Z",
+    }),
+  ),
 }));
 
 import { POST } from "@/app/api/business/[id]/analyze/route";
