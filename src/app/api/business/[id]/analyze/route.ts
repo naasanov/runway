@@ -198,16 +198,50 @@ export async function POST(
     }
   }
 
-  // TODO: D4-02 through D4-05 will add alert scenario detection here
   try {
     const runway = await recomputeRunway(businessId);
+    const { detectRunwayAlert, writeAlertToDb, clearExistingAlerts } = await import(
+      "@/lib/alert-scenarios"
+    );
+
+    // Clear old alerts before generating new ones
+    await clearExistingAlerts(supabase, businessId);
+
+    // Fetch current business state after runway has been recomputed
+    const { data: currentBiz } = await supabase
+      .from("businesses")
+      .select("id, current_balance, runway_days, runway_severity")
+      .eq("id", businessId)
+      .single();
+
+    const alertsCreated: AnalyzeResponse["alerts_created"] = [];
+
+    // Scenario 1: Runway alert
+    if (currentBiz) {
+      const runwayAlert = detectRunwayAlert(currentBiz);
+      if (runwayAlert) {
+        const written = await writeAlertToDb(supabase, runwayAlert);
+        if (written) {
+          alertsCreated.push({
+            id: written.id,
+            scenario: written.scenario,
+            severity: written.severity,
+            headline: written.headline,
+          });
+        }
+      }
+    }
+
+    // TODO: D4-03 Scenario 2 — Overdue Invoice
+    // TODO: D4-04 Scenario 3 — Subscription Waste
+    // TODO: D4-05 Scenario 4 — Revenue Concentration
 
     return NextResponse.json<AnalyzeResponse>({
       business_id: businessId,
       transactions_categorized: categorized,
       runway_days: runway.runway_days,
       runway_severity: runway.runway_severity,
-      alerts_created: [],
+      alerts_created: alertsCreated,
       sms_sent: false,
     });
   } catch {

@@ -133,6 +133,14 @@ jest.mock("@/lib/supabase", () => {
             })),
           };
         }
+        if (table === "alerts") {
+          return {
+            insert: jest.fn().mockResolvedValue({ error: null }),
+            delete: jest.fn(() => ({
+              eq: jest.fn().mockResolvedValue({ error: null }),
+            })),
+          };
+        }
         return {};
       }),
     },
