@@ -1,9 +1,56 @@
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { TopBar } from "@/components/dashboard/top-bar";
-import { RunwayHero } from "@/components/dashboard/runway-hero";
-import { CashForecast } from "@/components/dashboard/cash-forecast";
-import { AlertsPanel } from "@/components/dashboard/alerts-panel";
-import { ObligationsTable } from "@/components/dashboard/obligations-table";
+import { Nav } from "@/components/nav";
+import {
+  AlertTriangle,
+  Calendar,
+  TrendingDown,
+  Zap,
+} from "lucide-react";
+
+const UPCOMING = [
+  { label: "Payroll", date: "Mar 28", amount: 3800, danger: true },
+  { label: "Insurance", date: "Mar 28", amount: 1200, danger: true },
+  { label: "Rent", date: "Apr 1", amount: 2400, danger: false },
+];
+
+const ALERTS = [
+  {
+    severity: "red" as const,
+    headline: "You may miss payroll in 9 days.",
+    detail: "Projected shortfall of $2,200 by March 28 without intervention.",
+  },
+  {
+    severity: "amber" as const,
+    headline: "Durham Catering invoice is 12 days overdue.",
+    detail: "Collecting $3,200 would fully cover the expected shortfall.",
+  },
+  {
+    severity: "amber" as const,
+    headline: "Duplicate scheduling subscriptions detected.",
+    detail: "Cancel one tool to save roughly $1,068 per year.",
+  },
+  {
+    severity: "red" as const,
+    headline: "Revenue concentration risk is high.",
+    detail: "Over 60% of trailing revenue comes from one customer.",
+  },
+];
+
+const ACTIONS = [
+  {
+    action: "Collect Durham Catering invoice ($3,200)",
+    impact: "Covers projected payroll shortfall and adds cushion.",
+    cta: "Send reminder",
+  },
+  {
+    action: "Cancel one scheduling tool",
+    impact: "Saves around $89/month in recurring spend.",
+    cta: "Review tools",
+  },
+  {
+    action: "Delay next flour payment by 5 days",
+    impact: "Helps bridge the payroll + insurance overlap week.",
+  },
+];
 
 export default function DashboardPage() {
   return (
