@@ -9,7 +9,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { CircuitBackground } from "@/components/circuit-background";
 import { RunwayLogoIcon } from "@/components/runway-logo";
-import { Building2, CreditCard, Loader2, Zap } from "lucide-react";
+import { ArrowRight, Building2, CreditCard, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -112,6 +112,10 @@ export default function ConnectPage() {
   const [launching, setLaunching] = useState(false);
   const [streamCollapsed, setStreamCollapsed] = useState(false);
   const [collapseBodyHeight, setCollapseBodyHeight] = useState<number | null>(null);
+  const [stripeId, setStripeId] = useState("");
+  const [stripePassword, setStripePassword] = useState("");
+  const [stripeHovered, setStripeHovered] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
   const [business, setBusiness] = useState<ConnectResponse["business"] | null>(
     null
   );
@@ -304,8 +308,16 @@ export default function ConnectPage() {
     );
   }
 
+  const stripeReady = stripeId.length > 0 && stripePassword.length > 0;
+  const showStripeForm = stripeHovered || stripeId.length > 0 || stripePassword.length > 0;
+
   function handleStripeClick() {
-    if (launching) return;
+    if (!stripeReady || launching) return;
+    if (stripeId !== "88888888" || stripePassword !== "password") {
+      setStripeError("Invalid Stripe credentials. Check your account ID and password.");
+      return;
+    }
+    setStripeError(null);
     launchTimeRef.current = Date.now();
     setLaunching(true);
     setTimeout(() => void handleConnect(), 750);
@@ -444,28 +456,77 @@ export default function ConnectPage() {
               </p>
 
               <div className="flex flex-col mb-6 border border-border divide-y divide-border">
-                <button
-                  onClick={handleStripeClick}
-                  className="w-full flex items-center gap-3 px-5 py-4 bg-background hover:bg-muted transition-colors text-left"
+                {/* Stripe section: button + expandable credentials form */}
+                <div
+                  onMouseEnter={() => setStripeHovered(true)}
+                  onMouseLeave={() => setStripeHovered(false)}
                 >
-                  <div className="size-8 border border-border flex items-center justify-center shrink-0">
-                    <CreditCard className="size-4 text-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Connect Stripe</p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      Import transaction history
-                    </p>
-                  </div>
-                  <div className="ml-auto relative size-6">
-                    <Zap
-                      className={`size-6 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
-                    />
-                    <RunwayLogoIcon
-                      className={`size-6 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
-                    />
-                  </div>
-                </button>
+                  <button
+                    onClick={handleStripeClick}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-5 py-4 bg-background transition-colors text-left",
+                      stripeReady ? "hover:bg-muted" : "opacity-60 cursor-not-allowed"
+                    )}
+                  >
+                    <div className="size-8 border border-border flex items-center justify-center shrink-0">
+                      <CreditCard className="size-4 text-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Connect Stripe</p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Import transaction history
+                      </p>
+                    </div>
+                    <div className="ml-auto relative size-6">
+                      <Zap
+                        className={`size-6 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                      />
+                      <RunwayLogoIcon
+                        className={`size-6 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
+                      />
+                    </div>
+                  </button>
+
+                  {showStripeForm && (
+                    <div className="border-t border-border bg-muted/30 px-5 py-4 flex flex-col gap-3">
+                      <div>
+                        <label className="text-xs font-medium block mb-1.5">
+                          Stripe Account ID
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 88888888"
+                          value={stripeId}
+                          onChange={(e) => { setStripeId(e.target.value); setStripeError(null); }}
+                          className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                          style={{ borderRadius: 0 }}
+                        />
+                        <p className="text-[11px] text-muted-foreground font-mono mt-1">
+                          Your Stripe account identifier
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium block mb-1.5">
+                          Password
+                        </label>
+                        <input
+                          type="password"
+                          placeholder="Your password"
+                          value={stripePassword}
+                          onChange={(e) => { setStripePassword(e.target.value); setStripeError(null); }}
+                          className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                          style={{ borderRadius: 0 }}
+                        />
+                        <p className="text-[11px] text-muted-foreground font-mono mt-1">
+                          Your Runway account password
+                        </p>
+                      </div>
+                      {stripeError && (
+                        <p className="text-xs text-red-600 font-mono">{stripeError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <button
                   onClick={handleConnect}
@@ -642,15 +703,17 @@ export default function ConnectPage() {
                   <button
                     onClick={handleContinue}
                     className={cn(
-                      "w-full bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors flex items-center justify-center gap-2",
+                      "w-full flex items-center gap-3 px-5 bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors",
                       streamCollapsed ? "py-4 animate-pulse-green-glow" : "py-3"
                     )}
                   >
                     View dashboard
-                    <div className="relative size-5 shrink-0">
+                    <div className="ml-auto relative size-6 shrink-0">
+                      <ArrowRight
+                        className={`size-4 text-background absolute inset-0 m-auto transition-all duration-200 ${streamCollapsed ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                      />
                       <RunwayLogoIcon
-                        key={streamCollapsed ? "launched" : "idle"}
-                        className={`size-5 text-background absolute inset-0 ${streamCollapsed ? "animate-logo-launch" : "opacity-0"}`}
+                        className={`size-6 text-background absolute inset-0 ${streamCollapsed ? "animate-logo-launch" : "opacity-0"}`}
                       />
                     </div>
                   </button>
