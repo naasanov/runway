@@ -6,6 +6,7 @@ import type {
   AnalyzeStreamTransaction,
   ConnectResponse,
 } from "@/lib/types";
+import { formatRunwayDaysPhrase } from "@/lib/runway-display";
 import { cn } from "@/lib/utils";
 import { CircuitBackground } from "@/components/circuit-background";
 import { RunwayLogoIcon } from "@/components/runway-logo";
@@ -336,7 +337,7 @@ export default function ConnectPage() {
     );
     setStep("done");
     setStreamStatus(
-      `Categorized ${analyzeResponse.transactions_categorized} transactions. Runway is ${analyzeResponse.runway_days} days.`
+      `Categorized ${analyzeResponse.transactions_categorized} transactions. Runway is ${formatRunwayDaysPhrase(analyzeResponse.runway_days)}.`
     );
   }
 

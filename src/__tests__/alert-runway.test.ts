@@ -65,6 +65,19 @@ describe("detectRunwayAlert", () => {
     expect(result!.detail).toContain("Healthy");
   });
 
+  it("formats effectively unlimited runway without showing 999", () => {
+    const result = detectRunwayAlert({
+      id: "biz-test",
+      current_balance: 20000,
+      runway_days: 999,
+      runway_severity: "green",
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.headline).toContain("more than 90 days");
+    expect(result!.headline).not.toContain("999");
+  });
+
   it("includes recommended actions for red/amber alerts", () => {
     const red = detectRunwayAlert({
       id: "biz-test",

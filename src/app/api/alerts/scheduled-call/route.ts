@@ -1,20 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { alertCall } from '@/scripts/alert-call';
-import { loadDashboardData, DashboardDataError } from '@/lib/dashboard-data';
-import { getAlertMessage } from '@/lib/alert-message';
-import type { AlertSentiment } from '@/lib/alert-message';
-import { env } from '@/lib/env';
-import { badRequest, notFound, serverError } from '@/lib/errors';
+import type { AlertSentiment } from "@/lib/alert-message";
+import { getAlertMessage } from "@/lib/alert-message";
+import { DashboardDataError, loadDashboardData } from "@/lib/dashboard-data";
+import { env } from "@/lib/env";
+import { badRequest, notFound, serverError } from "@/lib/errors";
+import { alertCall } from "@/scripts/alert-call";
+import { NextRequest, NextResponse } from "next/server";
 
 const CALL_DELAY_MS = 10_000;
 
 /** Map sentiment to the corresponding ElevenLabs voice ID. */
 function voiceForSentiment(sentiment: AlertSentiment): string {
   switch (sentiment) {
-    case 'heavy': return env.ELEVENLABS_VOICE_ID_HEAVY;
-    case 'medium': return env.ELEVENLABS_VOICE_ID_MEDIUM;
-    case 'light': return env.ELEVENLABS_VOICE_ID_LIGHT;
-    default: return env.ELEVENLABS_VOICE_ID;
+    case "heavy":
+      return env.ELEVENLABS_VOICE_ID_HEAVY;
+    case "medium":
+      return env.ELEVENLABS_VOICE_ID_MEDIUM;
+    case "light":
+      return env.ELEVENLABS_VOICE_ID_LIGHT;
+    default:
+      return env.ELEVENLABS_VOICE_ID;
   }
 }
 
@@ -40,8 +44,9 @@ export async function POST(req: NextRequest) {
   const toNumber: string = body?.toNumber;
   const businessId: string = body?.businessId;
 
-  if (!toNumber) return badRequest('toNumber is required', 'MISSING_PHONE');
-  if (!businessId) return badRequest('businessId is required', 'MISSING_BUSINESS_ID');
+  if (!toNumber) return badRequest("toNumber is required", "MISSING_PHONE");
+  if (!businessId)
+    return badRequest("businessId is required", "MISSING_BUSINESS_ID");
 
   await new Promise((resolve) => setTimeout(resolve, CALL_DELAY_MS));
 
@@ -54,10 +59,13 @@ export async function POST(req: NextRequest) {
     await alertCall(message, toNumber, voiceId);
     return NextResponse.json({ success: true, sentiment });
   } catch (err) {
-    if (err instanceof DashboardDataError && err.code === 'BUSINESS_NOT_FOUND') {
+    if (
+      err instanceof DashboardDataError &&
+      err.code === "BUSINESS_NOT_FOUND"
+    ) {
       return notFound(err.message, err.code);
     }
-    console.error('Scheduled alert call failed:', err);
-    return serverError('Failed to place scheduled alert call', 'CALL_FAILED');
+    console.error("Scheduled alert call failed:", err);
+    return serverError("Failed to place scheduled alert call", "CALL_FAILED");
   }
 }

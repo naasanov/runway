@@ -2,6 +2,7 @@
 
 import { Nav } from "@/components/nav";
 import { ApiError, runwayApi } from "@/lib/api";
+import { formatRunwayDaysValue } from "@/lib/runway-display";
 import type {
   DashboardResponse,
   MeResponse,
@@ -300,6 +301,7 @@ export default function DashboardPage() {
     () => headlineAlert?.recommended_actions[0] ?? null,
     [headlineAlert]
   );
+  const headlineAlertColors = getColors(headlineAlert?.severity ?? null);
 
   const remainingActions = useMemo<RecommendedAction[]>(
     () =>
@@ -356,6 +358,7 @@ export default function DashboardPage() {
   const isCritical = data.business.runway_severity === "red";
   const isWarning = data.business.runway_severity === "amber";
   const runwayDays = data.business.runway_days ?? 0;
+  const runwayDisplay = formatRunwayDaysValue(data.business.runway_days);
   const meterPct = Math.min(100, (runwayDays / 90) * 100);
 
   return (
@@ -390,7 +393,7 @@ export default function DashboardPage() {
                     className={`font-black font-mono tabular-nums leading-none ${sc.text} ${isCritical ? "animate-pulse" : ""}`}
                     style={{ fontSize: "clamp(5rem, 14vw, 11rem)" }}
                   >
-                    {runwayDays}
+                    {runwayDisplay}
                   </span>
                   <div>
                     <p className="text-2xl font-bold text-foreground">days of cash</p>
@@ -428,9 +431,13 @@ export default function DashboardPage() {
                     #02 · Top Alert
                   </p>
                   <div className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${sc.dot} ${isCritical ? "animate-pulse" : ""}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${headlineAlertColors.dot} ${headlineAlert?.severity === "red" ? "animate-pulse" : ""}`}
+                    />
                     <div>
-                      <p className={`font-bold text-lg leading-snug ${sc.text}`}>
+                      <p
+                        className={`font-bold text-lg leading-snug ${headlineAlertColors.text}`}
+                      >
                         {headlineAlert.headline}
                       </p>
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">

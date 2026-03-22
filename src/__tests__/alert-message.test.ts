@@ -154,4 +154,29 @@ describe("getAlertMessage", () => {
     expect(result.sentiment).toBe("light");
     expect(result.message).toContain("You have healthy runway.");
   });
+
+  it("does not say 999 days in healthy runway summaries", async () => {
+    const result = await getAlertMessage(
+      makeDashboardResponse({
+        business: {
+          id: "biz-test",
+          name: "Sweet Grace Bakery",
+          current_balance: 8400,
+          runway_days: 999,
+          runway_severity: "green",
+          owner_phone: "+19195551234",
+        },
+        alerts: [],
+        forecast_summary: {
+          horizon_days: 30,
+          min_projected_balance: 4100,
+          danger_dates: [],
+          days: [],
+        },
+      }),
+    );
+
+    expect(result.message).toContain("more than 90 days");
+    expect(result.message).not.toContain("999");
+  });
 });
