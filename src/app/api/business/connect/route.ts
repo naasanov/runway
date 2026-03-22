@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { ConnectResponse } from "@/lib/types";
+import type { ConnectRequest, ConnectResponse } from "@/lib/types";
 import { badRequest, serverError } from "@/lib/errors";
-import { generateAllTransactions } from "@/lib/seed-data";
+import {
+  generateAllTransactions,
+  generateConcentrationTransactions,
+} from "@/lib/seed-data";
 
 // Dev 1 — D1-02/03: Pulls seed data, writes to DB, returns initialized business record.
 // Called when the user clicks "Connect Stripe" in the UI.
@@ -12,16 +15,26 @@ export async function POST(
   // doesn't try to instantiate the client during static build analysis.
   const { supabase } = await import("@/lib/supabase");
 
-  let body: { business_name?: string; business_type?: string; owner_phone?: string };
+  let body: Partial<ConnectRequest>;
   try {
     body = await req.json();
   } catch {
     return badRequest("Invalid JSON body.", "INVALID_BODY") as never;
   }
 
-  const { business_name, business_type = "bakery", owner_phone } = body;
+  const {
+    business_name,
+    business_type,
+    owner_phone,
+    stripe_account_id,
+  } = body;
 
-  if (!business_name || !owner_phone) {
+  const isConcentrationScenario = stripe_account_id === "77777777";
+  const resolvedBusinessName = business_name;
+  const resolvedBusinessType =
+    business_type ?? (isConcentrationScenario ? "agency" : "bakery");
+
+  if (!resolvedBusinessName || !owner_phone) {
     return badRequest(
       "business_name and owner_phone are required.",
       "MISSING_FIELDS"
@@ -41,8 +54,8 @@ export async function POST(
     .from("businesses")
     .insert({
       id: businessId,
-      name: business_name,
-      type: business_type,
+      name: resolvedBusinessName,
+      type: resolvedBusinessType,
       owner_phone: phone,
       stripe_connected: false,
       banking_connected: false,
@@ -60,7 +73,9 @@ export async function POST(
   }
 
   // ── Generate and insert seed transactions ─────────────────────────────────
-  const { allTxns, account } = generateAllTransactions(businessId);
+  const { allTxns, account } = isConcentrationScenario
+    ? generateConcentrationTransactions(businessId)
+    : generateAllTransactions(businessId);
 
   // Strip categorization fields — these get populated by /analyze (Gemini AI)
   const uncategorized = allTxns.map((t) => ({

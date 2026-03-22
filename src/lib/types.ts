@@ -138,6 +138,7 @@ export interface ConnectRequest {
   business_name: string;
   business_type: string;
   owner_phone: string;
+  stripe_account_id?: string;
 }
 
 export interface ConnectResponse {

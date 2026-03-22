@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import type { MockBankingResponse } from "@/lib/types";
-import { generateBankingData } from "@/lib/seed-data";
+import {
+  generateBankingData,
+  generateConcentrationBankingData,
+} from "@/lib/seed-data";
 
 // Dev 1 — D1-03: Returns current balance + transaction history including non-Stripe items.
 // next_payroll_due = today+8, next_insurance_due = today+7 (relative dates).
 // These future obligations combined with the unpaid Durham Catering invoice create
 // the payroll-miss scenario that fires the red alert.
-export async function GET(): Promise<NextResponse<MockBankingResponse>> {
-  const { account, transactions } = generateBankingData("mock_preview");
+export async function GET(
+  req: Request
+): Promise<NextResponse<MockBankingResponse>> {
+  const scenario = new URL(req.url).searchParams.get("scenario");
+  const { account, transactions } =
+    scenario === "concentration"
+      ? generateConcentrationBankingData("mock_preview")
+      : generateBankingData("mock_preview");
 
   const withNullCategory = transactions.map((t) => ({
     ...t,

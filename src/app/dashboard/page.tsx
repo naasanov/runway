@@ -263,8 +263,14 @@ export default function DashboardPage() {
 
     async function loadTransactions() {
       try {
+        const scenario =
+          typeof window !== "undefined"
+            ? (localStorage.getItem(`runway_scenario_${selectedBusinessId}`) ??
+              "bakery")
+            : "bakery";
+
         const res = await fetch(
-          `/api/mock/stripe/transactions?business_id=${selectedBusinessId}`
+          `/api/mock/stripe/transactions?business_id=${selectedBusinessId}&scenario=${scenario}`
         );
         if (res.ok) {
           const json = (await res.json()) as { transactions: Transaction[] };

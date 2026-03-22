@@ -29,7 +29,7 @@ export async function GET(
       .from("alerts")
       .select("*")
       .eq("business_id", businessId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: true }),
   ]);
 
   if (businessError || !business) {
