@@ -1,30 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { alertCall } from '@/scripts/alert-call';
+import { getAlertMessage } from '@/lib/alert-message';
+import type { AlertSentiment } from '@/lib/alert-message';
+import { env } from '@/lib/env';
 import { badRequest, serverError } from '@/lib/errors';
 
 const CALL_DELAY_MS = 10_000;
 
-// Hardcoded for now — will be replaced with a dynamic message API call
-const ALERT_MESSAGE =
-  'Automated message from Runway. Your business cash runway needs attention. ' +
-  'Please log in to your Runway dashboard to review your latest financial alerts.';
+/** Map sentiment to the corresponding ElevenLabs voice ID. */
+function voiceForSentiment(sentiment: AlertSentiment): string {
+  switch (sentiment) {
+    case 'heavy': return env.ELEVENLABS_VOICE_ID_HEAVY;
+    case 'medium': return env.ELEVENLABS_VOICE_ID_MEDIUM;
+    case 'light': return env.ELEVENLABS_VOICE_ID_LIGHT;
+    default: return env.ELEVENLABS_VOICE_ID;
+  }
+}
 
 /**
  * POST /api/alerts/scheduled-call
  *
- * Waits CALL_DELAY_MS then places an ElevenLabs + Twilio voice call to the
- * given number with a pre-generated alert message.
+ * Waits CALL_DELAY_MS, fetches the alert message and sentiment from
+ * getAlertMessage(), selects the appropriate ElevenLabs voice, then
+ * places a Twilio voice call to the given number.
  *
  * Request body:
  *   toNumber {string}  Required. E.164 phone number to call (e.g. "+15550001234").
  *
  * Responses:
- *   200  { success: true }
+ *   200  { success: true, sentiment: "light" | "medium" | "heavy" }
  *   400  { error, code: "MISSING_PHONE" }
  *   500  { error, code: "CALL_FAILED" }
- *
- * Note: Requires NEXT_PUBLIC_BASE_URL to be set to the publicly reachable
- * app URL so Twilio can fetch the generated audio file.
  */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -35,8 +41,12 @@ export async function POST(req: NextRequest) {
   await new Promise((resolve) => setTimeout(resolve, CALL_DELAY_MS));
 
   try {
-    await alertCall(ALERT_MESSAGE, toNumber);
-    return NextResponse.json({ success: true });
+    const { message, sentiment } = await getAlertMessage();
+    const voiceId = voiceForSentiment(sentiment);
+    console.log(`Alert sentiment: ${sentiment}, voice: ${voiceId}`);
+
+    await alertCall(message, toNumber, voiceId);
+    return NextResponse.json({ success: true, sentiment });
   } catch (err) {
     console.error('Scheduled alert call failed:', err);
     return serverError('Failed to place scheduled alert call', 'CALL_FAILED');
