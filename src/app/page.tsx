@@ -21,71 +21,41 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center px-6 py-24 text-center">
+      <section className="px-6 pt-24 pb-16 text-center">
         <p className="text-[11px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-6">
           Financial Intelligence / 2026
         </p>
 
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-foreground max-w-3xl leading-[1.1]">
+        <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-foreground max-w-4xl mx-auto leading-[1.05]">
           Know before your
           <br />
-          <span className="font-extrabold text-foreground">money runs out.</span>
+          <span className="font-extrabold">money runs out.</span>
         </h1>
 
-        <p className="mt-6 text-lg text-muted-foreground max-w-xl leading-relaxed">
-          Runway is an AI-powered cash flow intelligence engine for small
-          business owners. It tells you — in plain language, via text — when
-          something is about to go wrong.{" "}
-          <span className="text-foreground font-medium">9 days before it happens.</span>
+        <p className="mt-8 text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
+          AI-powered cash flow intelligence for small business owners.
+          Plain-language alerts via text —{" "}
+          <span className="text-foreground font-semibold">9 days before the crisis hits.</span>
         </p>
 
         <div className="mt-10 flex items-center gap-4 flex-wrap justify-center">
           <Link
             href="/connect"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-semibold hover:bg-foreground/80 transition-colors text-sm"
+            className="inline-flex items-center gap-2 px-7 py-3.5 bg-foreground text-background font-semibold hover:bg-foreground/80 transition-colors text-sm"
           >
             Connect your Stripe
             <ArrowRight className="size-4" />
           </Link>
           <Link
             href="/connect"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm"
+            className="inline-flex items-center gap-2 px-7 py-3.5 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm"
           >
-            View demo flow
+            View demo
           </Link>
-        </div>
-
-        {/* Alert preview */}
-        <div className="mt-16 max-w-sm w-full mx-auto">
-          <div className="border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20 p-5 text-left">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 size-8 border border-red-200 dark:border-red-900/40 flex items-center justify-center shrink-0">
-                <Bell className="size-4 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <p className="text-[10px] font-mono text-red-500 uppercase tracking-[0.15em] mb-1">
-                  {"// runway_alert"}
-                </p>
-                <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-                  Sweet Grace Bakery
-                </p>
-                <p className="text-sm text-red-800 dark:text-red-300 mt-1 leading-snug">
-                  Projected cash shortfall of $2,200 in{" "}
-                  <strong>9 days</strong>. You may not make payroll on March 28.
-                </p>
-                <p className="text-[10px] font-mono text-red-500 dark:text-red-500 mt-2 tracking-wider">
-                  SMS · 2:14 AM
-                </p>
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground text-center mt-3">
-            This text goes out automatically. No dashboard required.
-          </p>
         </div>
       </section>
 
-      {/* Stat credibility bar */}
+      {/* Stat credibility bar — immediately below hero */}
       <section className="border-t border-b border-border">
         <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4">
           <StatCell value="82%" label="of business failures caused by poor cash flow" />
@@ -162,7 +132,7 @@ export default function LandingPage() {
             href="/connect"
             className="inline-flex items-center gap-2 px-6 py-3 bg-foreground text-background font-semibold hover:bg-foreground/80 transition-colors text-sm shrink-0"
           >
-            Connect Sweet Grace Bakery
+            Connect your business
             <ArrowRight className="size-4" />
           </Link>
         </div>
