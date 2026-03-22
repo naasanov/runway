@@ -12,6 +12,7 @@ type MockBusiness = {
   current_balance: number;
   runway_days: number;
   runway_severity: string;
+  owner_phone: string;
 };
 
 const mockState = {
@@ -21,6 +22,7 @@ const mockState = {
     current_balance: 4847.23,
     runway_days: 22,
     runway_severity: "red",
+    owner_phone: "+19195551234",
   } as MockBusiness | null,
   transactions: [
     {
@@ -165,6 +167,7 @@ describe("GET /api/business/:id/dashboard", () => {
       current_balance: 4847.23,
       runway_days: 22,
       runway_severity: "red",
+      owner_phone: "+19195551234",
     };
     mockState.transactions = [
       {

@@ -265,6 +265,7 @@ export interface SendSmsResponse {
 
 export interface CallAlertResponse {
   success: boolean;
+  sentiment?: "light" | "medium" | "heavy";
 }
 
 export interface MeResponse {

@@ -473,7 +473,7 @@ export default function ConnectPage() {
       stripeId === CONCENTRATION_STRIPE_ID ? "concentration" : "bakery"
     );
     if (ownerPhone) {
-      void runwayApi.scheduleCall(ownerPhone).catch(() => null);
+      void runwayApi.scheduleCall(ownerPhone, business.id).catch(() => null);
     }
     router.push(`/dashboard?b=${business.id}`);
   }
