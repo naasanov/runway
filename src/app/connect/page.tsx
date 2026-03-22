@@ -105,6 +105,7 @@ export default function ConnectPage() {
   const completionHandledRef = useRef(false);
 
   const [ownerPhone, setOwnerPhone] = useState<string | null>(null);
+  const [businessName, setBusinessName] = useState<string | null>(null);
   const [step, setStep] = useState<ConnectStep>("idle");
   const [launching, setLaunching] = useState(false);
   const [business, setBusiness] = useState<ConnectResponse["business"] | null>(
@@ -121,7 +122,10 @@ export default function ConnectPage() {
   );
 
   useEffect(() => {
-    void runwayApi.getMe().then((me) => setOwnerPhone(me.phone)).catch(() => null);
+    void runwayApi.getMe().then((me) => {
+      setOwnerPhone(me.phone);
+      if (me.businessName) setBusinessName(me.businessName);
+    }).catch(() => null);
   }, []);
 
   useEffect(() => {
@@ -292,7 +296,7 @@ export default function ConnectPage() {
       setStep("connecting");
 
       const connectResponse = await runwayApi.connectBusiness({
-        business_name: DEFAULT_BUSINESS_NAME,
+        business_name: businessName ?? DEFAULT_BUSINESS_NAME,
         business_type: DEFAULT_BUSINESS_TYPE,
         owner_phone: ownerPhone ?? "",
       });
@@ -400,7 +404,7 @@ export default function ConnectPage() {
                 {"// connect_business"}
               </p>
               <h1 className="text-2xl font-bold tracking-tight mb-2">
-                Connect {DEFAULT_BUSINESS_NAME}
+                Connect {businessName ?? DEFAULT_BUSINESS_NAME}
               </h1>
               <p className="text-muted-foreground text-sm mb-8 max-w-sm leading-relaxed">
                 We&apos;ll import your transaction history, categorize

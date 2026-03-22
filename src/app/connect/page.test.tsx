@@ -70,7 +70,7 @@ describe("ConnectPage", () => {
     mockApi.getAlerts.mockReset();
     mockApi.openAnalyzeStream.mockReset();
     mockApi.getMe.mockReset();
-    mockApi.getMe.mockResolvedValue({ name: "Grace", phone: "+19195551234" });
+    mockApi.getMe.mockResolvedValue({ name: "Grace", businessName: "Sweet Grace Bakery", phone: "+19195551234" });
 
     mockApi.connectBusiness.mockResolvedValue({
       business: {

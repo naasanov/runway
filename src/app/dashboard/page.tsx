@@ -4,6 +4,7 @@ import { Nav } from "@/components/nav";
 import { ApiError, runwayApi } from "@/lib/api";
 import type {
   DashboardResponse,
+  MeResponse,
   RecommendedAction,
   Severity,
   Transaction,
@@ -209,6 +210,7 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const businessId = searchParams.get("b");
   const [data, setData] = useState<DashboardResponse | null>(null);
+  const [me, setMe] = useState<MeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -276,6 +278,7 @@ export default function DashboardPage() {
 
     void loadDashboard();
     void loadTransactions();
+    void runwayApi.getMe().then((u) => { if (!cancelled) setMe(u); }).catch(() => null);
     return () => { cancelled = true; };
   }, [businessId, router]);
 
@@ -358,9 +361,9 @@ export default function DashboardPage() {
         {/* Header */}
         <header>
           <p className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-1">
-            {"// cash_flow_intelligence"}
+            {`// ${me?.name ?? "cash_flow_intelligence"}`}
           </p>
-          <h1 className="text-2xl font-bold tracking-tight">{data.business.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{me?.businessName ?? data.business.name}</h1>
         </header>
 
         {/* #01 · Cash Runway — 50vh, split: number left / top alert+action right */}
