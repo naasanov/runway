@@ -255,11 +255,22 @@ No markdown, no explanation.`,
       return [];
     }
 
+    console.log(
+      `[alerts:${businessId}] subscription_waste_gemini_fallback ${JSON.stringify({
+        subscription_count: subscriptions.length,
+      })}`
+    );
+
     const schedulingTools = subscriptions.filter((subscription) =>
       /homebase|7shifts|scheduling/i.test(subscription.description),
     );
 
     if (schedulingTools.length < 2) {
+      console.log(
+        `[alerts:${businessId}] subscription_waste_gemini_fallback_no_overlap ${JSON.stringify({
+          subscription_count: subscriptions.length,
+        })}`
+      );
       return [];
     }
 

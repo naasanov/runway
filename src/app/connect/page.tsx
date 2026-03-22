@@ -12,6 +12,8 @@ const DEFAULT_BUSINESS = {
   business_type: "bakery",
   owner_phone: "+19195551234",
 };
+const POST_ANALYZE_RETRY_COUNT = 5;
+const POST_ANALYZE_RETRY_DELAY_MS = 400;
 
 function getStreamLines(transactions: Transaction[]): Transaction[] {
   return [...transactions]
@@ -29,6 +31,18 @@ function formatStreamLabel(transaction: Transaction): string {
     transaction.invoice_status === "unpaid" ? " [UNPAID]" : "";
 
   return `${formatAmount(transaction.amount)} — ${transaction.description} (${transaction.source})${status}`;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isHydratedDashboard(data: Awaited<ReturnType<typeof runwayApi.getDashboard>>) {
+  return (
+    data.business.runway_days != null ||
+    data.alerts.length > 0 ||
+    data.upcoming_obligations.length > 0
+  );
 }
 
 export default function ConnectPage() {
@@ -85,8 +99,22 @@ export default function ConnectPage() {
 
       try {
         const analyzeResponse = await runwayApi.analyzeBusiness(connectResponse.business.id);
-        const hydratedDashboard = await runwayApi.getDashboard(connectResponse.business.id);
-        const hydratedAlerts = await runwayApi.getAlerts(connectResponse.business.id);
+        let hydratedDashboard = await runwayApi.getDashboard(connectResponse.business.id);
+        let hydratedAlerts = await runwayApi.getAlerts(connectResponse.business.id);
+
+        for (let attempt = 1; attempt < POST_ANALYZE_RETRY_COUNT; attempt += 1) {
+          if (
+            isHydratedDashboard(hydratedDashboard) ||
+            hydratedAlerts.alerts.length > 0
+          ) {
+            break;
+          }
+
+          await sleep(POST_ANALYZE_RETRY_DELAY_MS);
+          hydratedDashboard = await runwayApi.getDashboard(connectResponse.business.id);
+          hydratedAlerts = await runwayApi.getAlerts(connectResponse.business.id);
+        }
+
         const overdueInvoiceAlert = analyzeResponse.alerts_created.find(
           (alert) => alert.scenario === "overdue_invoice"
         );

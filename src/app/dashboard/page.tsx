@@ -12,6 +12,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+const DASHBOARD_RETRY_COUNT = 4;
+const DASHBOARD_RETRY_DELAY_MS = 350;
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -70,6 +73,18 @@ function SectionHeader({
   );
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isHydratedDashboard(data: DashboardResponse): boolean {
+  return (
+    data.business.runway_days != null ||
+    data.alerts.length > 0 ||
+    data.upcoming_obligations.length > 0
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -89,15 +104,20 @@ export default function DashboardPage() {
     async function loadDashboard() {
       try {
         setError(null);
-        const response = await runwayApi.getDashboard(selectedBusinessId);
+        let response = await runwayApi.getDashboard(selectedBusinessId);
 
-        if (
-          response.business.runway_days == null &&
-          response.alerts.length === 0 &&
-          response.upcoming_obligations.length === 0
-        ) {
+        for (let attempt = 1; attempt < DASHBOARD_RETRY_COUNT; attempt += 1) {
+          if (isHydratedDashboard(response)) {
+            break;
+          }
+
+          await sleep(DASHBOARD_RETRY_DELAY_MS);
+          response = await runwayApi.getDashboard(selectedBusinessId);
+        }
+
+        if (!isHydratedDashboard(response)) {
           throw new Error(
-            "Dashboard returned no runway, no alerts, and no upcoming obligations."
+            "Dashboard returned no runway, no alerts, and no upcoming obligations after multiple retries."
           );
         }
 

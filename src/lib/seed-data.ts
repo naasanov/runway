@@ -48,7 +48,7 @@ export function generateStripeTransactions(
   const txns: Omit<Transaction, "created_at">[] = [];
 
   // ── Daily retail revenue: 90 days of customer payments ──────────────────────
-  for (let i = 90; i >= 1; i--) {
+  for (let i = 50; i >= 1; i--) {
     const day = new Date(today);
     day.setDate(day.getDate() - i);
     const isWeekend = day.getDay() === 0 || day.getDay() === 6;
