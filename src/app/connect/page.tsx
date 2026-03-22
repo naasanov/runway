@@ -370,11 +370,14 @@ export default function ConnectPage() {
       setStreamStatus("Importing transactions from connected accounts…");
       setStep("connecting");
 
-      const { businessName, businessType } = resolveScenarioBusiness(stripeId);
+      const {
+        businessName: scenarioBusinessName,
+        businessType: scenarioBusinessType,
+      } = resolveScenarioBusiness(stripeId);
 
       const connectResponse = await runwayApi.connectBusiness({
-        business_name: businessName,
-        business_type: businessType,
+        business_name: scenarioBusinessName,
+        business_type: scenarioBusinessType,
         owner_phone: ownerPhone ?? "",
         stripe_account_id: stripeId || undefined,
       });
@@ -469,6 +472,9 @@ export default function ConnectPage() {
       `runway_scenario_${business.id}`,
       stripeId === CONCENTRATION_STRIPE_ID ? "concentration" : "bakery"
     );
+    if (ownerPhone) {
+      void runwayApi.scheduleCall(ownerPhone).catch(() => null);
+    }
     router.push(`/dashboard?b=${business.id}`);
   }
 

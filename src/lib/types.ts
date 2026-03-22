@@ -269,6 +269,7 @@ export interface CallAlertResponse {
 
 export interface MeResponse {
   name: string | null;
+  businessName: string | null;
   phone: string;
 }
 

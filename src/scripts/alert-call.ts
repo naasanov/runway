@@ -15,13 +15,14 @@ const PUBLIC_BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || process.env.PUBLIC_
 
 const AUDIO_DIR = path.join(process.cwd(), 'public', 'tmp_audio');
 
-async function generateSpeech(message: string): Promise<string> {
+async function generateSpeech(message: string, voiceId?: string): Promise<string> {
   console.log(`🎙  Generating speech...`);
 
-  const fullText = `Automated message from Runway: ${message}. Automated message from Runway: ${message}.`;
+  const fullText = `Automated message from Runway: ${message}.`;
+  const voice = voiceId || ELEVENLABS_VOICE_ID;
 
   const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
+    `https://api.elevenlabs.io/v1/text-to-speech/${voice}`,
     {
       method: 'POST',
       headers: {
@@ -50,9 +51,9 @@ async function generateSpeech(message: string): Promise<string> {
   return filename;
 }
 
-export async function alertCall(message: string, toNumber?: string): Promise<void> {
+export async function alertCall(message: string, toNumber?: string, voiceId?: string): Promise<void> {
   const to = toNumber || ALERT_PHONE_NUMBER;
-  const filename = await generateSpeech(message);
+  const filename = await generateSpeech(message, voiceId);
   const audioUrl = `${PUBLIC_BASE_URL}/tmp_audio/${filename}`;
 
   const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
@@ -76,6 +77,7 @@ export async function alertCall(message: string, toNumber?: string): Promise<voi
     to,
     from: TWILIO_FROM_NUMBER,
     twiml,
+    machineDetection: 'DetectMessageEnd',
   });
 
   console.log(`✅ Call initiated! SID: ${call.sid} | Status: ${call.status}`);

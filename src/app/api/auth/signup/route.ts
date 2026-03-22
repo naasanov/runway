@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
 
   if (!signupRes.ok) {
     const error = await signupRes.json().catch(() => ({}));
+    console.error("[signup] Auth0 error:", JSON.stringify(error));
     const message: string =
       (error as { message?: string; description?: string }).message ??
       (error as { message?: string; description?: string }).description ??
@@ -94,5 +95,20 @@ export async function POST(req: NextRequest) {
 
   const response = NextResponse.json({ redirect: "/connect" }, { status: 200 });
   setSessionCookie(response, tokens.id_token);
+  // Store user profile data that isn't in the id_token
+  response.cookies.set("runway_phone", normalizedPhone, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7,
+    path: "/",
+  });
+  response.cookies.set("runway_business_name", businessName, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7,
+    path: "/",
+  });
   return response;
 }

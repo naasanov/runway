@@ -12,6 +12,7 @@ import { badRequest, serverError } from '@/lib/errors';
  *   message  {string}  Required. The text to speak during the call.
  *   toNumber {string}  Optional. E.164 phone number to call (e.g. "+15550001234").
  *                      Defaults to ALERT_PHONE_NUMBER (arya's phone) from env.
+ *   voiceId  {string}  Optional. ElevenLabs voice ID to use for TTS.
  *
  * Responses:
  *   200  { success: true }
@@ -25,11 +26,12 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const message: string = body?.message;
   const toNumber: string | undefined = body?.toNumber;
+  const voiceId: string | undefined = body?.voiceId;
 
   if (!message) return badRequest('message is required', 'MISSING_MESSAGE');
 
   try {
-    await alertCall(message, toNumber);
+    await alertCall(message, toNumber, voiceId);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Alert call failed:', err);
