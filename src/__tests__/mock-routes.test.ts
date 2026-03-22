@@ -109,10 +109,10 @@ describe("GET /api/mock/banking/accounts", () => {
     expect(typeof body.count).toBe("number");
   });
 
-  it("account current_balance is 4847.23", async () => {
+  it("account current_balance is 3127.23", async () => {
     const res = await bankingGET();
     const body = await res.json();
-    expect(body.account.current_balance).toBe(4847.23);
+    expect(body.account.current_balance).toBe(3127.23);
   });
 
   it("next_payroll_due is 8 days from today (in meta)", async () => {
