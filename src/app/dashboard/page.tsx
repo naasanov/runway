@@ -123,7 +123,9 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
       className={`transition-all duration-700 ease-out ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+        visible
+          ? "opacity-100 translate-y-0 scale-100 blur-0"
+          : "opacity-0 translate-y-12 scale-[0.97] blur-[2px]"
       }`}
     >
       {children}
@@ -359,98 +361,108 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight">{data.business.name}</h1>
         </header>
 
-        {/* #01 · Cash Runway — ~50vh, dominant */}
-        <section className="min-h-[50vh] flex flex-col justify-center border-l-4 border border-l-0 border-border pl-0">
+        {/* #01 · Cash Runway — 50vh, split: number left / top alert+action right */}
+        <section>
           <SectionHeader index="01" label="Cash Runway" />
 
-          <div className={`border-l-4 ${sc.accent} pl-8 py-4`}>
-            {/* Severity label — colored text, no banner */}
-            <p className={`text-xs font-mono font-bold uppercase tracking-[0.2em] mb-4 ${sc.text}`}>
-              {isCritical ? "⚠ runway alert" : isWarning ? "▲ low runway" : "✓ runway healthy"}
-            </p>
+          <div className={`min-h-[50vh] border border-border border-l-4 ${sc.accent} grid grid-cols-1 lg:grid-cols-2`}>
 
-            {/* Giant number */}
-            <div className="flex items-baseline gap-6 mb-2">
-              <span
-                className={`font-black font-mono tabular-nums leading-none ${sc.text} ${isCritical ? "animate-pulse" : ""}`}
-                style={{ fontSize: "clamp(6rem, 18vw, 14rem)" }}
-              >
-                {runwayDays}
-              </span>
+            {/* LEFT: runway number */}
+            <div className="flex flex-col justify-between p-8 lg:border-r border-border">
+              <p className={`text-xs font-mono font-bold uppercase tracking-[0.2em] ${sc.text}`}>
+                {isCritical ? "⚠ runway alert" : isWarning ? "▲ low runway" : "✓ runway healthy"}
+              </p>
+
               <div>
-                <p className="text-2xl font-bold text-foreground">days of cash</p>
-                <p className="text-sm text-muted-foreground">at current burn rate</p>
-              </div>
-            </div>
+                <div className="flex items-baseline gap-4 mb-2">
+                  <span
+                    className={`font-black font-mono tabular-nums leading-none ${sc.text} ${isCritical ? "animate-pulse" : ""}`}
+                    style={{ fontSize: "clamp(5rem, 14vw, 11rem)" }}
+                  >
+                    {runwayDays}
+                  </span>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">days of cash</p>
+                    <p className="text-sm text-muted-foreground">at current burn rate</p>
+                  </div>
+                </div>
 
-            {/* Meter bar */}
-            <div className="w-full h-1 bg-border/30 mt-6 mb-6">
-              <div
-                className={`h-full ${sc.meter} transition-all duration-700`}
-                style={{ width: `${meterPct}%` }}
-              />
-            </div>
+                {/* Meter bar */}
+                <div className="w-full h-[3px] bg-border/30 mt-6 mb-6">
+                  <div
+                    className={`h-full ${sc.meter} transition-all duration-700`}
+                    style={{ width: `${meterPct}%` }}
+                  />
+                </div>
 
-            {/* KPI row */}
-            <div className="flex items-center gap-10">
-              <KpiStat label="Current Balance" value={formatCurrency(data.business.current_balance)} />
-              {data.forecast_summary.min_projected_balance < 0 && (
-                <KpiStat
-                  label="Lowest Projected"
-                  value={formatCurrency(data.forecast_summary.min_projected_balance)}
-                  danger
-                />
-              )}
-              <KpiStat label="Forecast Window" value={`${data.forecast_summary.horizon_days} days`} />
-            </div>
-          </div>
-        </section>
-
-        {/* Top Alert + Top Action — immediately after runway */}
-        {headlineAlert && (
-          <Reveal>
-            <SectionHeader index="02" label="Top Alert" />
-            <div className={`border border-border border-l-4 ${sc.accent} p-6`}>
-              <div className="flex items-start gap-3 mb-3">
-                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${sc.dot} ${isCritical ? "animate-pulse" : ""}`} />
-                <div className="flex-1">
-                  <p className={`font-bold text-base leading-snug ${sc.text}`}>
-                    {headlineAlert.headline}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    {headlineAlert.detail}
-                  </p>
+                <div className="flex items-center gap-8 flex-wrap">
+                  <KpiStat label="Current Balance" value={formatCurrency(data.business.current_balance)} />
+                  {data.forecast_summary.min_projected_balance < 0 && (
+                    <KpiStat
+                      label="Lowest Projected"
+                      value={formatCurrency(data.forecast_summary.min_projected_balance)}
+                      danger
+                    />
+                  )}
+                  <KpiStat label="Forecast Window" value={`${data.forecast_summary.horizon_days} days`} />
                 </div>
               </div>
+            </div>
 
-              {/* Top action inline */}
-              {topAction && (
-                <div className="mt-4 pt-4 border-t border-border flex items-start gap-4">
-                  <div className="flex-1">
-                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1">
+            {/* RIGHT: top alert + recommended action */}
+            {headlineAlert ? (
+              <div className="flex flex-col justify-between p-8">
+                <div>
+                  <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.15em] mb-4">
+                    #02 · Top Alert
+                  </p>
+                  <div className="flex items-start gap-3">
+                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${sc.dot} ${isCritical ? "animate-pulse" : ""}`} />
+                    <div>
+                      <p className={`font-bold text-lg leading-snug ${sc.text}`}>
+                        {headlineAlert.headline}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                        {headlineAlert.detail}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {topAction && (
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.15em] mb-3">
                       recommended action
                     </p>
-                    <p className="text-sm font-semibold">
-                      {topAction.action}
-                      {topAction.target && (
-                        <span className="text-muted-foreground font-normal"> · {topAction.target}</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{topAction.impact}</p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold leading-snug">
+                          {topAction.action}
+                          {topAction.target && (
+                            <span className="text-muted-foreground font-normal"> · {topAction.target}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{topAction.impact}</p>
+                      </div>
+                      <p className={`text-lg font-mono font-black tabular-nums shrink-0 ${topAction.amount > 0 ? "text-green-700" : "text-red-600"}`}>
+                        {topAction.amount > 0 ? "+" : ""}{formatCurrency(topAction.amount)}
+                      </p>
+                    </div>
                   </div>
-                  <div className={`text-base font-mono font-black tabular-nums shrink-0 ${topAction.amount > 0 ? "text-green-700" : "text-red-600"}`}>
-                    {topAction.amount > 0 ? "+" : ""}{formatCurrency(topAction.amount)}
-                  </div>
-                </div>
-              )}
-            </div>
-          </Reveal>
-        )}
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                No active alerts
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* #03 · Active Alerts */}
         {data.alerts.length > 0 && (
           <Reveal>
-            <SectionHeader index="03" label="Active Alerts" />
+            <SectionHeader index="02" label="Active Alerts" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {data.alerts.map((alert) => {
                 const asc = getColors(alert.severity);
@@ -480,7 +492,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <SectionHeader
-                index="04"
+                index="03"
                 label={`${data.forecast_summary.horizon_days}-Day Cash Forecast`}
               />
               <div className="border border-border p-4 pb-2">
@@ -494,7 +506,7 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <SectionHeader index="05" label="Upcoming Obligations" />
+              <SectionHeader index="04" label="Upcoming Obligations" />
               <div className="border border-border divide-y divide-border">
                 {data.upcoming_obligations.map((item, i) => {
                   const isDanger = data.forecast_summary.danger_dates.includes(item.due_date);
@@ -523,7 +535,7 @@ export default function DashboardPage() {
         {/* #06 · Recommended Actions */}
         {remainingActions.length > 0 && (
           <Reveal>
-            <SectionHeader index="06" label="Recommended Actions" />
+            <SectionHeader index="05" label="Recommended Actions" />
             <div className="border border-border divide-y divide-border">
               {remainingActions.map((action, index) => (
                 <div key={`${action.action}-${index}`} className="flex items-start gap-4 px-4 py-4">
@@ -551,7 +563,7 @@ export default function DashboardPage() {
         {/* #07 · Transaction History */}
         {transactions.length > 0 && (
           <Reveal>
-            <SectionHeader index="07" label="Transaction History" />
+            <SectionHeader index="06" label="Transaction History" />
             <div className="border border-border divide-y divide-border">
               {transactions.map((txn) => {
                 const isCredit = txn.transaction_type === "credit";
