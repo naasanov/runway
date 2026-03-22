@@ -1,31 +1,57 @@
-import { NextResponse } from "next/server";
-import type { AlertsResponse } from "@/lib/types";
+import { NextRequest, NextResponse } from "next/server";
+import type { Alert, AlertsResponse, Severity } from "@/lib/types";
+import { SEVERITIES } from "@/lib/types";
+import { notFound, serverError } from "@/lib/errors";
 
-// TODO: implement — Dev 4 owns this
-export async function GET(): Promise<NextResponse<AlertsResponse>> {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+): Promise<NextResponse<AlertsResponse>> {
+  const { supabase } = await import("@/lib/supabase");
+  const businessId = params.id;
+
+  // Verify business exists
+  const { data: business, error: bizErr } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("id", businessId)
+    .single();
+
+  if (bizErr || !business) {
+    return notFound("Business not found.", "BUSINESS_NOT_FOUND") as never;
+  }
+
+  // Parse optional severity filter
+  const severityParam = req.nextUrl.searchParams.get("severity") as Severity | null;
+  if (severityParam && !SEVERITIES.includes(severityParam)) {
+    return notFound("Invalid severity filter.", "INVALID_SEVERITY") as never;
+  }
+
+  // Query alerts ordered by severity (red first)
+  let query = supabase
+    .from("alerts")
+    .select("*")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false });
+
+  if (severityParam) {
+    query = query.eq("severity", severityParam);
+  }
+
+  const { data: alerts, error: alertErr } = await query;
+
+  if (alertErr) {
+    return serverError("Failed to fetch alerts.", "DB_QUERY_FAILED") as never;
+  }
+
+  // Sort: red first, then amber, then green
+  const severityOrder: Record<string, number> = { red: 0, amber: 1, green: 2 };
+  const sorted = ((alerts ?? []) as Alert[]).sort(
+    (a, b) => (severityOrder[a.severity] ?? 3) - (severityOrder[b.severity] ?? 3)
+  );
+
   return NextResponse.json({
-    business_id: "biz-sweet-grace-001",
-    alerts: [
-      {
-        id: "alert-0092",
-        business_id: "biz-sweet-grace-001",
-        scenario: "overdue_invoice",
-        severity: "red",
-        headline: "Durham Catering Co owes $3,200 and is 12 days overdue.",
-        detail:
-          "If not collected by March 25, you will not cover the $2,200 payroll shortfall on March 28.",
-        recommended_actions: [
-          {
-            action: "Send payment reminder",
-            target: "Durham Catering Co",
-            amount: 3200,
-            impact: "Covers payroll shortfall with $1,000 buffer",
-          },
-        ],
-        sms_sent: true,
-        sms_sent_at: "2026-03-21T02:00:00Z",
-        created_at: "2026-03-21T02:00:00Z",
-      },
-    ],
+    business_id: businessId,
+    alerts: sorted,
   });
 }
