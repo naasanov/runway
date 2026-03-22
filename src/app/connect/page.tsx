@@ -487,45 +487,56 @@ export default function ConnectPage() {
                     </div>
                   </button>
 
-                  {showStripeForm && (
-                    <div className="border-t border-border bg-muted/30 px-5 py-4 flex flex-col gap-3">
-                      <div>
-                        <label className="text-xs font-medium block mb-1.5">
-                          Stripe Account ID
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 88888888"
-                          value={stripeId}
-                          onChange={(e) => { setStripeId(e.target.value); setStripeError(null); }}
-                          className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
-                          style={{ borderRadius: 0 }}
-                        />
-                        <p className="text-[11px] text-muted-foreground font-mono mt-1">
-                          Your Stripe account identifier
-                        </p>
+                  {/* Always in DOM — grid trick animates height, opacity fades */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateRows: showStripeForm ? "1fr" : "0fr",
+                      opacity: showStripeForm ? 1 : 0,
+                      transition:
+                        "grid-template-rows 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out",
+                    }}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="border-t border-border bg-muted/30 px-5 py-4 flex flex-col gap-3">
+                        <div>
+                          <label className="text-xs font-medium block mb-1.5">
+                            Stripe Account ID
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Your Stripe account ID"
+                            value={stripeId}
+                            onChange={(e) => { setStripeId(e.target.value); setStripeError(null); }}
+                            className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                            style={{ borderRadius: 0 }}
+                          />
+                          <p className="text-[11px] text-muted-foreground font-mono mt-1">
+                            Found in Stripe → Settings → Account details
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium block mb-1.5">
+                            Password
+                          </label>
+                          <input
+                            type="password"
+                            placeholder="••••••••"
+                            value={stripePassword}
+                            onChange={(e) => { setStripePassword(e.target.value); setStripeError(null); }}
+                            className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                            style={{ borderRadius: 0 }}
+                          />
+                          <p className="text-[11px] text-muted-foreground font-mono mt-1">
+                            The password you set when signing up
+                          </p>
+                        </div>
+                        {stripeError && (
+                          <p className="text-xs text-red-600 font-mono">{stripeError}</p>
+                        )}
                       </div>
-                      <div>
-                        <label className="text-xs font-medium block mb-1.5">
-                          Password
-                        </label>
-                        <input
-                          type="password"
-                          placeholder="Your password"
-                          value={stripePassword}
-                          onChange={(e) => { setStripePassword(e.target.value); setStripeError(null); }}
-                          className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
-                          style={{ borderRadius: 0 }}
-                        />
-                        <p className="text-[11px] text-muted-foreground font-mono mt-1">
-                          Your Runway account password
-                        </p>
-                      </div>
-                      {stripeError && (
-                        <p className="text-xs text-red-600 font-mono">{stripeError}</p>
-                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 <button
