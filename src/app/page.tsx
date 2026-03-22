@@ -13,7 +13,7 @@ export default function LandingPage() {
       <nav className="border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 font-semibold tracking-tight">
-            <RunwayLogoIcon className="size-4" style={{ color: GREEN }} />
+            <RunwayLogoIcon className="size-8" style={{ color: GREEN }} />
             <span style={{ color: GREEN }}>Runway</span>
           </div>
           <Link

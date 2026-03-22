@@ -32,12 +32,12 @@ export function ConnectCTA({
       style={style}
     >
       {label}
-      <div className="relative size-4 shrink-0">
+      <div className="relative size-6 shrink-0">
         <ArrowRight
-          className={`size-4 absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+          className={`size-6 absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
         />
         <RunwayLogoIcon
-          className={`size-4 absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
+          className={`size-6 absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
         />
       </div>
     </button>

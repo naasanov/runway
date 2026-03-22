@@ -7,6 +7,7 @@ import type {
   ConnectResponse,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { CircuitBackground } from "@/components/circuit-background";
 import { RunwayLogoIcon } from "@/components/runway-logo";
 import { Building2, CreditCard, Loader2, Plane, Zap } from "lucide-react";
 import Link from "next/link";
@@ -371,20 +372,21 @@ export default function ConnectPage() {
   }
 
   return (
-    <div className="h-dvh overflow-hidden bg-background flex flex-col">
-      <nav className="border-b border-border">
+    <div className="h-dvh overflow-hidden bg-background flex flex-col relative">
+      <CircuitBackground step={step} />
+      <nav className="border-b border-border relative z-10">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-2 font-semibold">
           <Link href="/" className="flex items-center gap-2">
-            <RunwayLogoIcon className="size-4" />
+            <RunwayLogoIcon className="size-8" />
             Runway
           </Link>
         </div>
       </nav>
 
-      <main className="flex-1 min-h-0 overflow-hidden px-4 py-4 sm:px-6 sm:py-6">
+      <main className="flex-1 min-h-0 overflow-hidden px-4 py-4 sm:px-6 sm:py-6 relative z-10">
         <div className="mx-auto flex h-full w-full max-w-xl items-center overflow-hidden">
           {step === "idle" && (
-            <div className="w-full">
+            <div className="w-full bg-background">
               <p className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-5">
                 {"// connect_business"}
               </p>
@@ -392,8 +394,8 @@ export default function ConnectPage() {
                 Connect {DEFAULT_BUSINESS.business_name}
               </h1>
               <p className="text-muted-foreground text-sm mb-8 max-w-sm leading-relaxed">
-                We&apos;ll import your seeded demo business, then categorize
-                your transactions and surface what needs attention.
+                We&apos;ll import your transaction history, categorize
+                your activity, and surface what needs attention.
               </p>
 
               <div className="flex flex-col mb-6 border border-border divide-y divide-border">
@@ -410,12 +412,12 @@ export default function ConnectPage() {
                       Import transaction history
                     </p>
                   </div>
-                  <div className="ml-auto relative size-4">
+                  <div className="ml-auto relative size-6">
                     <Zap
-                      className={`size-4 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                      className={`size-6 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
                     />
                     <RunwayLogoIcon
-                      className={`size-4 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
+                      className={`size-6 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
                     />
                   </div>
                 </button>
@@ -444,7 +446,7 @@ export default function ConnectPage() {
           {(step === "connecting" ||
             step === "analyzing" ||
             step === "done") && (
-            <div className="flex h-full w-full flex-col overflow-hidden">
+            <div className="flex h-full w-full flex-col overflow-hidden bg-background">
               <div className="flex items-center gap-2 mb-1">
                 <div
                   className={`size-2 rounded-full shrink-0 ${
@@ -464,7 +466,7 @@ export default function ConnectPage() {
               <p className="mb-4 pl-4 text-xs text-muted-foreground font-mono">
                 {business
                   ? `${business.name} · stripe + banking`
-                  : "connecting demo business"}
+                  : "connecting business"}
               </p>
 
               <div className="flex min-h-0 w-full flex-1 flex-col border border-border bg-background overflow-hidden">
