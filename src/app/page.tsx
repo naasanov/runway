@@ -20,43 +20,67 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="px-6 pt-24 pb-16 text-center">
-        <p className="text-[11px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-6">
-          Financial Intelligence / 2026
-        </p>
+      {/* Hero — split layout: headline left, CTAs right */}
+      <section className="px-6 pt-16 pb-0 border-b border-border">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-10 items-end pb-14">
+            {/* Left: headline + copy */}
+            <div>
+              <p className="text-[11px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-5">
+                Financial Intelligence / 2026
+              </p>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.05]">
+                Know before your
+                <br />
+                <span className="font-extrabold">money runs out.</span>
+              </h1>
+              <p className="mt-6 text-lg text-muted-foreground max-w-md leading-relaxed">
+                AI-powered cash flow intelligence for small business owners.
+                Plain-language alerts via text —{" "}
+                <span className="text-foreground font-semibold">9 days before the crisis hits.</span>
+              </p>
+            </div>
 
-        <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-foreground max-w-4xl mx-auto leading-[1.05]">
-          Know before your
-          <br />
-          <span className="font-extrabold">money runs out.</span>
-        </h1>
+            {/* Right: CTAs stacked */}
+            <div className="flex flex-row lg:flex-col gap-3 lg:items-stretch shrink-0">
+              <Link
+                href="/connect"
+                className="inline-flex items-center justify-between gap-4 px-6 py-4 bg-foreground text-background font-semibold hover:bg-foreground/80 transition-colors text-sm whitespace-nowrap"
+              >
+                Connect your Stripe
+                <ArrowRight className="size-4 shrink-0" />
+              </Link>
+              <Link
+                href="/connect"
+                className="inline-flex items-center justify-center px-6 py-4 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm whitespace-nowrap"
+              >
+                View demo
+              </Link>
+            </div>
+          </div>
 
-        <p className="mt-8 text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
-          AI-powered cash flow intelligence for small business owners.
-          Plain-language alerts via text —{" "}
-          <span className="text-foreground font-semibold">9 days before the crisis hits.</span>
-        </p>
-
-        <div className="mt-10 flex items-center gap-4 flex-wrap justify-center">
-          <Link
-            href="/connect"
-            className="inline-flex items-center gap-2 px-7 py-3.5 bg-foreground text-background font-semibold hover:bg-foreground/80 transition-colors text-sm"
-          >
-            Connect your Stripe
-            <ArrowRight className="size-4" />
-          </Link>
-          <Link
-            href="/connect"
-            className="inline-flex items-center gap-2 px-7 py-3.5 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm"
-          >
-            View demo
-          </Link>
+          {/* QuickBooks / Runway tagline — visible above fold */}
+          <div className="border-t border-border py-8 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-8">
+            <p className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] uppercase shrink-0">
+              {"// what_we_do"}
+            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-0">
+              <span className="text-xl font-bold tracking-tight text-muted-foreground">
+                QuickBooks tells you what happened.
+              </span>
+              <span className="hidden sm:inline text-xl font-bold text-muted-foreground/40 mx-4">
+                /
+              </span>
+              <span className="text-xl font-bold tracking-tight text-[#166534]">
+                Runway tells you what&apos;s about to happen.
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Stat credibility bar — immediately below hero */}
-      <section className="border-t border-b border-border">
+      {/* Stat credibility bar */}
+      <section className="border-b border-border">
         <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4">
           <StatCell value="82%" label="of business failures caused by poor cash flow" />
           <StatCell value="$150K+" label="annual cost of a full-time CFO" />
@@ -68,15 +92,6 @@ export default function LandingPage() {
       {/* Features — border grid, no card backgrounds */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] uppercase mb-4">
-            {"// what_we_do"}
-          </p>
-          <h2 className="text-2xl font-bold mb-1 tracking-tight">
-            QuickBooks tells you what happened.
-          </h2>
-          <p className="text-muted-foreground mb-12">
-            Runway tells you what&apos;s about to happen.
-          </p>
 
           <div className="border border-border grid grid-cols-1 sm:grid-cols-3">
             <FeatureCell
