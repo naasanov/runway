@@ -9,7 +9,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { CircuitBackground } from "@/components/circuit-background";
 import { RunwayLogoIcon } from "@/components/runway-logo";
-import { Building2, CreditCard, Loader2, Plane, Zap } from "lucide-react";
+import { Building2, CreditCard, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -627,8 +627,12 @@ export default function ConnectPage() {
                       streamCollapsed ? "py-4 animate-pulse-green-glow" : "py-3"
                     )}
                   >
-                    {streamCollapsed && <Plane className="size-4 animate-plane-enter" />}
-                    View dashboard →
+                    View dashboard
+                    <div className="relative size-5 shrink-0">
+                      <RunwayLogoIcon
+                        className={`size-5 text-background absolute inset-0 ${streamCollapsed ? "animate-logo-launch" : "opacity-0"}`}
+                      />
+                    </div>
                   </button>
                 </div>
               )}
