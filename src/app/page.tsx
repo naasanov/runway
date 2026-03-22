@@ -1,7 +1,8 @@
-import { RunwayLogoIcon } from "@/components/runway-logo";
+import { ConnectCTA } from "@/components/connect-cta";
 import Link from "next/link";
 import React from "react";
 import { TrendingDown, Bell, Zap, ArrowRight } from "lucide-react";
+import { RunwayLogoIcon } from "@/components/runway-logo";
 
 const GREEN = "#166534";
 
@@ -48,14 +49,11 @@ export default function LandingPage() {
 
             {/* Right: CTAs stacked */}
             <div className="flex flex-row lg:flex-col gap-3 lg:items-stretch shrink-0">
-              <Link
-                href="/connect"
+              <ConnectCTA
+                label="Connect your Stripe"
                 className="inline-flex items-center justify-between gap-4 px-6 py-4 text-white font-semibold hover:opacity-90 transition-opacity text-sm whitespace-nowrap"
                 style={{ backgroundColor: GREEN }}
-              >
-                Connect your Stripe
-                <ArrowRight className="size-4 shrink-0" />
-              </Link>
+              />
               <Link
                 href="/connect"
                 className="inline-flex items-center justify-center px-6 py-4 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm whitespace-nowrap"

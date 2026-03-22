@@ -275,7 +275,7 @@ export default function ConnectPage() {
   function handleStripeClick() {
     if (launching) return;
     setLaunching(true);
-    setTimeout(() => void handleConnect(), 420);
+    setTimeout(() => void handleConnect(), 750);
   }
 
   async function handleConnect() {
