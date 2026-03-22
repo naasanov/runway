@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const message: string = body?.message;
 
-  if (!message) return badRequest('message is required');
+  if (!message) return badRequest('message is required', 'MISSING_MESSAGE');
 
   try {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -26,6 +26,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, callSid: call.sid });
   } catch (err) {
     console.error('Alert call failed:', err);
-    return serverError('Failed to trigger alert call');
+    return serverError('Failed to trigger alert call', 'CALL_FAILED');
   }
 }
