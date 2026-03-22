@@ -1,5 +1,10 @@
 # Runway
 
+***HACK DUKE 2026: Finance Track***
+
+Nicolas Asanov, Abhimanyu Agashe, Vidur Shah, Arya Venkatesan
+---
+
 **AI-powered cash flow intelligence for small business owners.**  
 Runway connects to your business data, forecasts your cash position, and sends *plain‑language* alerts via SMS so you can act **before** a cash crunch hits.
 
