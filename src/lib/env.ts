@@ -14,6 +14,9 @@ const envSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string(),
   TWILIO_FROM_NUMBER: z.string(),
   ALERT_PHONE_NUMBER: z.string(),
+  AUTH0_DOMAIN: z.string(),
+  AUTH0_CLIENT_ID: z.string(),
+  AUTH0_CLIENT_SECRET: z.string(),
 });
 
 type Env = z.infer<typeof envSchema>;
