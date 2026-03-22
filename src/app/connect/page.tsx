@@ -7,6 +7,7 @@ import type {
   ConnectResponse,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { RunwayLogoIcon } from "@/components/runway-logo";
 import { Building2, CreditCard, Loader2, Plane, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -106,6 +107,7 @@ export default function ConnectPage() {
   const completionHandledRef = useRef(false);
 
   const [step, setStep] = useState<ConnectStep>("idle");
+  const [launching, setLaunching] = useState(false);
   const [business, setBusiness] = useState<ConnectResponse["business"] | null>(
     null
   );
@@ -270,6 +272,12 @@ export default function ConnectPage() {
     );
   }
 
+  function handleStripeClick() {
+    if (launching) return;
+    setLaunching(true);
+    setTimeout(() => void handleConnect(), 420);
+  }
+
   async function handleConnect() {
     try {
       resetStreamState();
@@ -367,7 +375,7 @@ export default function ConnectPage() {
       <nav className="border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-2 font-semibold">
           <Link href="/" className="flex items-center gap-2">
-            <Plane className="size-4" />
+            <RunwayLogoIcon className="size-4" />
             Runway
           </Link>
         </div>
@@ -390,7 +398,7 @@ export default function ConnectPage() {
 
               <div className="flex flex-col gap-3 mb-6">
                 <button
-                  onClick={handleConnect}
+                  onClick={handleStripeClick}
                   className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border border-border bg-card hover:bg-muted transition-colors text-left"
                 >
                   <div className="size-9 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
@@ -402,7 +410,14 @@ export default function ConnectPage() {
                       Import transaction history
                     </p>
                   </div>
-                  <Zap className="size-4 text-muted-foreground ml-auto" />
+                  <div className="ml-auto relative size-4">
+                    <Zap
+                      className={`size-4 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                    />
+                    <RunwayLogoIcon
+                      className={`size-4 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
+                    />
+                  </div>
                 </button>
 
                 <button
