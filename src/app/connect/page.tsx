@@ -9,7 +9,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { CircuitBackground } from "@/components/circuit-background";
 import { RunwayLogoIcon } from "@/components/runway-logo";
-import { Building2, CreditCard, Loader2, Zap } from "lucide-react";
+import { ArrowRight, Building2, CreditCard, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -104,10 +104,19 @@ export default function ConnectPage() {
   const queuedTransactionsRef = useRef<AnalyzeStreamTransaction[]>([]);
   const completionHandledRef = useRef(false);
 
+  const launchTimeRef = useRef<number>(0);
+  const streamBodyRef = useRef<HTMLDivElement>(null);
+
   const [ownerPhone, setOwnerPhone] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [step, setStep] = useState<ConnectStep>("idle");
   const [launching, setLaunching] = useState(false);
+  const [streamCollapsed, setStreamCollapsed] = useState(false);
+  const [collapseBodyHeight, setCollapseBodyHeight] = useState<number | null>(null);
+  const [stripeId, setStripeId] = useState("");
+  const [stripePassword, setStripePassword] = useState("");
+  const [stripeHovered, setStripeHovered] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
   const [business, setBusiness] = useState<ConnectResponse["business"] | null>(
     null
   );
@@ -141,6 +150,30 @@ export default function ConnectPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (step === "done") {
+      const timer = window.setTimeout(() => {
+        if (!streamBodyRef.current) {
+          setStreamCollapsed(true);
+          return;
+        }
+        // Snapshot the body's current pixel height, then next frame animate to 0
+        const h = streamBodyRef.current.offsetHeight;
+        setCollapseBodyHeight(h);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setCollapseBodyHeight(0);
+            setStreamCollapsed(true);
+          });
+        });
+      }, 800);
+      return () => window.clearTimeout(timer);
+    } else {
+      setStreamCollapsed(false);
+      setCollapseBodyHeight(null);
+    }
+  }, [step]);
 
   const [animatedTransactionIds, setAnimatedTransactionIds] = useState<
     string[]
@@ -279,8 +312,17 @@ export default function ConnectPage() {
     );
   }
 
+  const stripeReady = stripeId.length > 0 && stripePassword.length > 0;
+  const showStripeForm = stripeHovered || stripeId.length > 0 || stripePassword.length > 0;
+
   function handleStripeClick() {
-    if (launching) return;
+    if (!stripeReady || launching) return;
+    if (stripeId !== "88888888" || stripePassword !== "password") {
+      setStripeError("Invalid Stripe credentials. Check your account ID and password.");
+      return;
+    }
+    setStripeError(null);
+    launchTimeRef.current = Date.now();
     setLaunching(true);
     setTimeout(() => void handleConnect(), 750);
   }
@@ -362,6 +404,15 @@ export default function ConnectPage() {
         );
       });
     } catch (connectError) {
+      if (connectError instanceof ApiError && connectError.status === 401) {
+        // Let the plane animation finish before redirecting to the login page
+        const elapsed = Date.now() - launchTimeRef.current;
+        const remaining = Math.max(0, 1200 - elapsed);
+        if (remaining > 0) await sleep(remaining);
+        router.push("/login");
+        return;
+      }
+      setLaunching(false);
       resetStreamState();
       setStep("idle");
       setBusiness(null);
@@ -412,28 +463,90 @@ export default function ConnectPage() {
               </p>
 
               <div className="flex flex-col mb-6 border border-border divide-y divide-border">
-                <button
-                  onClick={handleStripeClick}
-                  className="w-full flex items-center gap-3 px-5 py-4 bg-background hover:bg-muted transition-colors text-left"
+                {/* Stripe section: button + expandable credentials form */}
+                <div
+                  onMouseEnter={() => setStripeHovered(true)}
+                  onMouseLeave={() => setStripeHovered(false)}
                 >
-                  <div className="size-8 border border-border flex items-center justify-center shrink-0">
-                    <CreditCard className="size-4 text-foreground" />
+                  <button
+                    onClick={handleStripeClick}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-5 py-4 bg-background transition-colors text-left",
+                      stripeReady ? "hover:bg-muted" : "opacity-60 cursor-not-allowed"
+                    )}
+                  >
+                    <div className="size-8 border border-border flex items-center justify-center shrink-0">
+                      <CreditCard className="size-4 text-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Connect Stripe</p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Import transaction history
+                      </p>
+                    </div>
+                    <div className="ml-auto relative size-6">
+                      <Zap
+                        className={`size-6 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                      />
+                      <RunwayLogoIcon
+                        className={`size-6 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Always in DOM — grid trick animates height, opacity fades */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateRows: showStripeForm ? "1fr" : "0fr",
+                      opacity: showStripeForm ? 1 : 0,
+                      transition:
+                        "grid-template-rows 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out",
+                    }}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="border-t border-border bg-muted/30 px-5 py-4 flex flex-col gap-3">
+                        <div>
+                          <label htmlFor="stripe-account-id" className="text-xs font-medium block mb-1.5">
+                            Stripe Account ID
+                          </label>
+                          <input
+                            id="stripe-account-id"
+                            type="text"
+                            placeholder="Your Stripe account ID"
+                            value={stripeId}
+                            onChange={(e) => { setStripeId(e.target.value); setStripeError(null); }}
+                            className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                            style={{ borderRadius: 0 }}
+                          />
+                          <p className="text-[11px] text-muted-foreground font-mono mt-1">
+                            Found in Stripe → Settings → Account details
+                          </p>
+                        </div>
+                        <div>
+                          <label htmlFor="stripe-password" className="text-xs font-medium block mb-1.5">
+                            Password
+                          </label>
+                          <input
+                            id="stripe-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={stripePassword}
+                            onChange={(e) => { setStripePassword(e.target.value); setStripeError(null); }}
+                            className="w-full px-3 py-2 text-sm border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                            style={{ borderRadius: 0 }}
+                          />
+                          <p className="text-[11px] text-muted-foreground font-mono mt-1">
+                            The password you set when signing up
+                          </p>
+                        </div>
+                        {stripeError && (
+                          <p className="text-xs text-red-600 font-mono">{stripeError}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">Connect Stripe</p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      Import transaction history
-                    </p>
-                  </div>
-                  <div className="ml-auto relative size-6">
-                    <Zap
-                      className={`size-6 text-muted-foreground absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
-                    />
-                    <RunwayLogoIcon
-                      className={`size-6 text-foreground absolute inset-0 ${launching ? "animate-logo-launch" : "opacity-0"}`}
-                    />
-                  </div>
-                </button>
+                </div>
 
                 <button
                   onClick={handleConnect}
@@ -482,8 +595,14 @@ export default function ConnectPage() {
                   : "connecting business"}
               </p>
 
-              <div className="flex min-h-0 w-full flex-1 flex-col border border-border bg-background overflow-hidden">
-                <div className="px-4 py-3 border-b border-border">
+              <div
+                className={cn(
+                  "w-full flex-col border border-border bg-background overflow-hidden",
+                  streamCollapsed ? "flex flex-none" : "flex min-h-0 flex-1"
+                )}
+              >
+                {/* Header — always visible when collapsed */}
+                <div className="shrink-0 px-4 py-3 border-b border-border">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">Transactions</p>
@@ -500,76 +619,88 @@ export default function ConnectPage() {
                   </div>
                 </div>
 
-                <div className="border-b border-border bg-background/70 px-4 py-3 text-xs text-muted-foreground transition-all duration-500 ease-out">
-                  {streamStatus}
-                </div>
+                {/* Body — height is snapshotted then animated to 0 on collapse */}
+                <div
+                  ref={streamBodyRef}
+                  className="flex flex-col overflow-hidden"
+                  style={{
+                    transition: "height 0.7s ease-out",
+                    ...(collapseBodyHeight !== null
+                      ? { height: collapseBodyHeight, flexShrink: 0 }
+                      : { flex: "1 1 0%", minHeight: 0 }),
+                  }}
+                >
+                  <div className="shrink-0 border-b border-border bg-background/70 px-4 py-3 text-xs text-muted-foreground transition-all duration-500 ease-out">
+                    {streamStatus}
+                  </div>
 
-                <div className="runway-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 space-y-2 sm:p-4">
-                  {visibleTransactions.length === 0 &&
-                    (step === "connecting" || step === "analyzing") && (
-                      <div className="animate-settle-in border border-dashed border-border px-4 py-6 text-sm text-muted-foreground flex items-center gap-3 font-mono">
-                        <Loader2 className="size-4 animate-spin shrink-0" />
-                        Categorizing your transactions — first items appear shortly.
-                      </div>
-                    )}
+                  <div className="runway-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 space-y-2 sm:p-4">
+                    {visibleTransactions.length === 0 &&
+                      (step === "connecting" || step === "analyzing") && (
+                        <div className="animate-settle-in border border-dashed border-border px-4 py-6 text-sm text-muted-foreground flex items-center gap-3 font-mono">
+                          <Loader2 className="size-4 animate-spin shrink-0" />
+                          Categorizing your transactions — first items appear shortly.
+                        </div>
+                      )}
 
-                  {visibleTransactions.map((transaction) => {
-                    const recurrence = formatRecurrence(transaction);
+                    {visibleTransactions.map((transaction) => {
+                      const recurrence = formatRecurrence(transaction);
 
-                    return (
-                      <div
-                        key={transaction.id}
-                        className={cn(
-                          "border border-border bg-background px-3 py-2 transition-[transform,box-shadow,border-color,background-color] duration-500 ease-out",
-                          animatedTransactionIds.includes(transaction.id) &&
-                            "animate-settle-in animate-soft-highlight border-border/80"
-                        )}
-                      >
-                        <div className="flex min-w-0 items-center gap-2 text-xs sm:text-sm">
-                          <p
-                            className={`shrink-0 font-semibold ${
-                              transaction.amount < 0
-                                ? "text-red-600"
-                                : "text-green-600"
-                            }`}
-                          >
-                            {formatAmount(transaction.amount)}
-                          </p>
-                          <p className="min-w-0 flex-1 truncate text-foreground">
-                            {transaction.description}
-                          </p>
-                          <div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground sm:text-xs">
-                            <span>{transaction.date}</span>
-                            {transaction.invoice_status === "unpaid" && (
-                              <span className="font-medium text-red-600">
-                                UNPAID
-                              </span>
-                            )}
-                            {recurrence && (
-                              <span className="hidden sm:inline">
-                                {recurrence}
-                              </span>
-                            )}
-                            {transaction.category === null ? (
-                              <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors duration-500 ease-out">
-                                <Loader2 className="size-3 animate-spin" />
-                                categorizing
-                              </span>
-                            ) : (
-                              <span
-                                className={cn(
-                                  "inline-flex px-1.5 py-0.5 text-[10px] font-mono transition-colors duration-500 ease-out",
-                                  categoryBadgeClass(transaction.category)
-                                )}
-                              >
-                                {transaction.category}
-                              </span>
-                            )}
+                      return (
+                        <div
+                          key={transaction.id}
+                          className={cn(
+                            "border border-border bg-background px-3 py-2 transition-[transform,box-shadow,border-color,background-color] duration-500 ease-out",
+                            animatedTransactionIds.includes(transaction.id) &&
+                              "animate-settle-in animate-soft-highlight border-border/80"
+                          )}
+                        >
+                          <div className="flex min-w-0 items-center gap-2 text-xs sm:text-sm">
+                            <p
+                              className={`shrink-0 font-semibold ${
+                                transaction.amount < 0
+                                  ? "text-red-600"
+                                  : "text-green-600"
+                              }`}
+                            >
+                              {formatAmount(transaction.amount)}
+                            </p>
+                            <p className="min-w-0 flex-1 truncate text-foreground">
+                              {transaction.description}
+                            </p>
+                            <div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground sm:text-xs">
+                              <span>{transaction.date}</span>
+                              {transaction.invoice_status === "unpaid" && (
+                                <span className="font-medium text-red-600">
+                                  UNPAID
+                                </span>
+                              )}
+                              {recurrence && (
+                                <span className="hidden sm:inline">
+                                  {recurrence}
+                                </span>
+                              )}
+                              {transaction.category === null ? (
+                                <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors duration-500 ease-out">
+                                  <Loader2 className="size-3 animate-spin" />
+                                  categorizing
+                                </span>
+                              ) : (
+                                <span
+                                  className={cn(
+                                    "inline-flex px-1.5 py-0.5 text-[10px] font-mono transition-colors duration-500 ease-out",
+                                    categoryBadgeClass(transaction.category)
+                                  )}
+                                >
+                                  {transaction.category}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -591,9 +722,20 @@ export default function ConnectPage() {
                 <div className="mt-4">
                   <button
                     onClick={handleContinue}
-                    className="w-full py-3 bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors"
+                    className={cn(
+                      "w-full flex items-center gap-3 px-5 bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors",
+                      streamCollapsed ? "py-4 animate-pulse-green-glow" : "py-3"
+                    )}
                   >
-                    View dashboard →
+                    View dashboard
+                    <div className="ml-auto relative size-6 shrink-0">
+                      <ArrowRight
+                        className={`size-4 text-background absolute inset-0 m-auto transition-all duration-200 ${streamCollapsed ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                      />
+                      <RunwayLogoIcon
+                        className={`size-6 text-background absolute inset-0 ${streamCollapsed ? "animate-logo-launch" : "opacity-0"}`}
+                      />
+                    </div>
                   </button>
                 </div>
               )}
