@@ -200,9 +200,13 @@ export async function POST(
 
   try {
     const runway = await recomputeRunway(businessId);
-    const { detectRunwayAlert, writeAlertToDb, clearExistingAlerts } = await import(
-      "@/lib/alert-scenarios"
-    );
+    const {
+      detectRunwayAlert,
+      detectOverdueInvoiceAlerts,
+      detectSubscriptionWasteAlerts,
+      writeAlertToDb,
+      clearExistingAlerts,
+    } = await import("@/lib/alert-scenarios");
 
     // Clear old alerts before generating new ones
     await clearExistingAlerts(supabase, businessId);
@@ -214,26 +218,62 @@ export async function POST(
       .eq("id", businessId)
       .single();
 
+    // Fetch all categorized transactions + compute forecast for alert detectors
+    const { data: allTxns } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("business_id", businessId);
+
+    const allTransactions = (allTxns ?? []) as Transaction[];
+    const { computeForecast: computeForecastForAlerts } = await import("@/lib/forecast");
+    const forecast = computeForecastForAlerts(
+      allTransactions,
+      currentBiz?.current_balance ?? 0,
+      30,
+    );
+
     const alertsCreated: AnalyzeResponse["alerts_created"] = [];
+
+    const persistAlert = async (
+      alert: Omit<import("@/lib/types").Alert, "sms_sent" | "sms_sent_at" | "created_at">,
+    ) => {
+      const written = await writeAlertToDb(supabase, alert);
+      if (written) {
+        alertsCreated.push({
+          id: written.id,
+          scenario: written.scenario,
+          severity: written.severity,
+          headline: written.headline,
+        });
+      }
+    };
 
     // Scenario 1: Runway alert
     if (currentBiz) {
       const runwayAlert = detectRunwayAlert(currentBiz);
-      if (runwayAlert) {
-        const written = await writeAlertToDb(supabase, runwayAlert);
-        if (written) {
-          alertsCreated.push({
-            id: written.id,
-            scenario: written.scenario,
-            severity: written.severity,
-            headline: written.headline,
-          });
-        }
-      }
+      if (runwayAlert) await persistAlert(runwayAlert);
     }
 
-    // TODO: D4-03 Scenario 2 — Overdue Invoice
-    // TODO: D4-04 Scenario 3 — Subscription Waste
+    // Scenario 2: Overdue Invoice alerts
+    const overdueAlerts = detectOverdueInvoiceAlerts(
+      businessId,
+      allTransactions,
+      forecast.days,
+    );
+    for (const alert of overdueAlerts) {
+      await persistAlert(alert);
+    }
+
+    // Scenario 3: Subscription Waste alerts
+    const subAlerts = await detectSubscriptionWasteAlerts(
+      businessId,
+      allTransactions,
+      gemini,
+    );
+    for (const alert of subAlerts) {
+      await persistAlert(alert);
+    }
+
     // TODO: D4-05 Scenario 4 — Revenue Concentration
 
     return NextResponse.json<AnalyzeResponse>({
