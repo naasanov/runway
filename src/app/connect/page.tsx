@@ -157,10 +157,9 @@ export default function ConnectPage() {
     "Waiting to import transactions…"
   );
 
-  const selectedDemoBusinessName =
-    stripeId === CONCENTRATION_STRIPE_ID
-      ? CONCENTRATION_BUSINESS_NAME
-      : DEFAULT_BUSINESS_NAME;
+  const selectedDemoBusinessName = isSupportedDemoStripeAccount(stripeId)
+    ? resolveScenarioBusiness(stripeId).businessName
+    : "your business";
 
   useEffect(() => {
     void runwayApi.getMe().then((me) => setOwnerPhone(me.phone)).catch(() => null);
@@ -493,7 +492,17 @@ export default function ConnectPage() {
                 {"// connect_business"}
               </p>
               <h1 className="text-2xl font-bold tracking-tight mb-2">
-                Connect {selectedDemoBusinessName}
+                Connect{" "}
+                <span
+                  className={cn(
+                    "transition-all duration-200",
+                    isSupportedDemoStripeAccount(stripeId)
+                      ? "blur-0"
+                      : "blur-[3px]"
+                  )}
+                >
+                  {selectedDemoBusinessName}
+                </span>
               </h1>
               <p className="text-muted-foreground text-sm mb-8 max-w-sm leading-relaxed">
                 We&apos;ll import your transaction history, categorize
