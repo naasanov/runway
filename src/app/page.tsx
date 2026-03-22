@@ -1,11 +1,24 @@
+"use client";
+
 import Link from "next/link";
-import React from "react";
+import React, { useRef, useState } from "react";
 import { TrendingDown, Bell, Zap, ArrowRight } from "lucide-react";
 import { RunwayLogoIcon } from "@/components/runway-logo";
+import { useRouter } from "next/navigation";
 
 const GREEN = "#166534";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [launching, setLaunching] = useState(false);
+  const launchTimeRef = useRef<number>(0);
+
+  function handleStripeClick() {
+    if (launching) return;
+    launchTimeRef.current = Date.now();
+    setLaunching(true);
+    setTimeout(() => router.push("/signup"), 750);
+  }
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Nav */}
@@ -56,14 +69,21 @@ export default function LandingPage() {
 
             {/* Right: CTAs stacked */}
             <div className="flex flex-row lg:flex-col gap-3 lg:items-stretch shrink-0">
-              <Link
-                href="/signup"
+              <button
+                onClick={handleStripeClick}
                 className="inline-flex items-center justify-between gap-4 px-6 py-4 text-white font-semibold hover:opacity-90 transition-opacity text-sm whitespace-nowrap"
                 style={{ backgroundColor: GREEN }}
               >
                 Connect your Stripe
-                <ArrowRight className="size-4 shrink-0" />
-              </Link>
+                <div className="relative size-4 shrink-0">
+                  <ArrowRight
+                    className={`size-4 absolute inset-0 transition-all duration-200 ${launching ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
+                  />
+                  <RunwayLogoIcon
+                    className={`size-4 absolute inset-0 text-white ${launching ? "animate-logo-launch" : "opacity-0"}`}
+                  />
+                </div>
+              </button>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center px-6 py-4 border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm whitespace-nowrap"
