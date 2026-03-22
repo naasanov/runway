@@ -1,8 +1,4 @@
-import type {
-  Category,
-  RecurrencePattern,
-  Transaction,
-} from "./types";
+import type { Category, RecurrencePattern, Transaction } from "./types";
 
 export interface DemoCategorizationResult {
   id: string;
@@ -33,7 +29,7 @@ export function isGeminiServiceUnavailable(error: unknown): boolean {
 }
 
 export function inferDemoCategorization(
-  transaction: Transaction,
+  transaction: Transaction
 ): DemoCategorizationResult {
   const description = transaction.description.toLowerCase();
 
@@ -78,10 +74,7 @@ export function inferDemoCategorization(
     };
   }
 
-  if (
-    description.includes("insurance") ||
-    hasTag(transaction, "insurance")
-  ) {
+  if (description.includes("insurance") || hasTag(transaction, "insurance")) {
     return {
       id: transaction.id,
       category: "insurance",
@@ -121,7 +114,7 @@ export function inferDemoCategorization(
 }
 
 export function inferDemoCategorizationBatch(
-  transactions: Transaction[],
+  transactions: Transaction[]
 ): DemoCategorizationResult[] {
   return transactions.map(inferDemoCategorization);
 }

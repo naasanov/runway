@@ -16,6 +16,8 @@ import { NextResponse } from "next/server";
 const BATCH_SIZE = 50;
 const GEMINI_CONCURRENCY = 2;
 
+export const dynamic = "force-dynamic";
+
 const SYSTEM_PROMPT = `You are a financial transaction categorizer for small businesses.
 
 For each transaction, return a JSON object with:
@@ -319,6 +321,18 @@ export async function POST(
     categorized,
   });
 
+  const { count: categorizedCountAfterWrite, error: categorizedCountError } =
+    await supabase
+      .from("transactions")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId)
+      .not("category", "is", null);
+
+  logAnalyze(businessId, "categorized_count_after_write", {
+    categorized_count: categorizedCountAfterWrite ?? 0,
+    count_error: categorizedCountError?.message ?? null,
+  });
+
   try {
     logAnalyze(businessId, "recomputing_runway_with_alerts");
     const runway = await recomputeRunway(businessId);
@@ -417,6 +431,16 @@ export async function POST(
     }
 
     // TODO: D4-05 Scenario 4 — Revenue Concentration
+
+    const { count: alertCountAfterWrite, error: alertCountError } = await supabase
+      .from("alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId);
+
+    logAnalyze(businessId, "alert_count_after_write", {
+      alert_count: alertCountAfterWrite ?? 0,
+      count_error: alertCountError?.message ?? null,
+    });
 
     logAnalyze(businessId, "complete", {
       categorized,

@@ -7,6 +7,8 @@ import {
   VALID_HORIZONS,
 } from "@/lib/forecast";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

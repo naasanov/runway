@@ -3,6 +3,8 @@ import type { Alert, AlertsResponse, Severity } from "@/lib/types";
 import { SEVERITIES } from "@/lib/types";
 import { notFound, serverError } from "@/lib/errors";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
