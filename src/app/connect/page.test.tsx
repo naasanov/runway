@@ -8,7 +8,7 @@ import type { AnalyzeStreamHandlers } from "@/lib/api";
 const push = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ push, prefetch: jest.fn() }),
 }));
 
 jest.mock("@/lib/api", () => ({
