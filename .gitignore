@@ -48,3 +48,5 @@ next-env.d.ts
 /tmp_audio/*
 !/tmp_audio/.gitkeep
 .gstack/
+/public/tmp_audio/*
+!/public/tmp_audio/.gitkeep
