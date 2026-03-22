@@ -229,6 +229,13 @@ describe("ConnectPage", () => {
 
     render(React.createElement(ConnectPage));
 
+    // Fill in credentials before the button becomes active
+    fireEvent.change(screen.getByLabelText("Stripe Account ID"), {
+      target: { value: "88888888" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password" },
+    });
     fireEvent.click(screen.getByText("Connect Stripe"));
 
     // Advance past the 750ms launch animation delay before handleConnect fires.
@@ -269,7 +276,7 @@ describe("ConnectPage", () => {
     expect(
       await screen.findByText(/import complete — 229/i),
     ).not.toBeNull();
-    expect(screen.getByText("View dashboard →")).not.toBeNull();
+    expect(screen.getByText("View dashboard")).not.toBeNull();
   });
 
   it("shows a connect-time error if the analysis stream fails", async () => {
@@ -289,6 +296,13 @@ describe("ConnectPage", () => {
 
     render(React.createElement(ConnectPage));
 
+    // Fill in credentials before the button becomes active
+    fireEvent.change(screen.getByLabelText("Stripe Account ID"), {
+      target: { value: "88888888" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password" },
+    });
     fireEvent.click(screen.getByText("Connect Stripe"));
 
     // Advance past the 750ms launch animation delay before handleConnect fires.
