@@ -7,6 +7,22 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Safe area padding for iOS notch */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Mobile bottom padding for fixed nav */
+  .pb-mobile-nav {
+    padding-bottom: 5rem; /* 80px = 64px nav + 16px gap */
+  }
+
+  @media (min-width: 768px) {
+    .pb-mobile-nav {
+      padding-bottom: 0;
+    }
+  }
 }
 
 @layer base {

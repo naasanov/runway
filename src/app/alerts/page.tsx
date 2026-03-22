@@ -3,7 +3,7 @@ import { Bell, MessageSquare } from "lucide-react";
 
 export default function AlertsPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-mobile-nav">
       <Nav businessId="sweet-grace-bakery" />
 
       <main className="max-w-4xl mx-auto px-6 py-8">

@@ -4,7 +4,7 @@ import { AlertTriangle, TrendingDown, Calendar, Zap } from "lucide-react";
 export default function DashboardPage() {
   // businessId will be read from searchParams when wired up
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-mobile-nav">
       <Nav businessId="sweet-grace-bakery" />
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">

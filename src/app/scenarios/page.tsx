@@ -29,7 +29,7 @@ export default function ScenariosPage() {
         : "text-green-600 dark:text-green-400";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-mobile-nav">
       <Nav businessId="sweet-grace-bakery" />
 
       <main className="max-w-3xl mx-auto px-6 py-8">

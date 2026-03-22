@@ -1,0 +1,32 @@
+{
+  "date": "2026-03-21",
+  "url": "http://localhost:3000/dashboard",
+  "designScore": "D",
+  "aiSlopScore": "B",
+  "categoryGrades": {
+    "visualHierarchy": "D",
+    "typography": "D",
+    "colorContrast": "C",
+    "spacingLayout": "B",
+    "interactionStates": "D",
+    "responsiveDesign": "D",
+    "motion": "C",
+    "contentQuality": "D",
+    "aiSlop": "B",
+    "performance": "B"
+  },
+  "findings": [
+    {"id": "FINDING-001", "title": "Placeholder content in production", "impact": "high", "category": "content"},
+    {"id": "FINDING-002", "title": "No page heading / H1", "impact": "high", "category": "hierarchy"},
+    {"id": "FINDING-003", "title": "All H2 headings same size", "impact": "high", "category": "typography"},
+    {"id": "FINDING-004", "title": "Line lengths exceed 75 characters", "impact": "medium", "category": "typography"},
+    {"id": "FINDING-005", "title": "Undersized touch targets", "impact": "high", "category": "interaction"},
+    {"id": "FINDING-006", "title": "No focus-visible styles", "impact": "high", "category": "interaction"},
+    {"id": "FINDING-007", "title": "transition: all anti-pattern", "impact": "medium", "category": "motion"},
+    {"id": "FINDING-008", "title": "Hydration warning in console", "impact": "medium", "category": "performance"},
+    {"id": "FINDING-009", "title": "Alert cards lack hierarchy", "impact": "medium", "category": "hierarchy"},
+    {"id": "FINDING-010", "title": "Numeric alignment in obligations", "impact": "polish", "category": "typography"},
+    {"id": "FINDING-011", "title": "Empty state for chart not designed", "impact": "medium", "category": "content"},
+    {"id": "FINDING-012", "title": "No mobile navigation", "impact": "high", "category": "responsive"}
+  ]
+}

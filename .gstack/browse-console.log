@@ -1,0 +1,104 @@
+[2026-03-22T00:24:02.701Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-03-22T00:24:27.130Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:24:28.023Z] [log] [Fast Refresh] done in 891ms
+[2026-03-22T00:24:28.406Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-03-22T00:24:51.813Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:24:52.333Z] [log] [Fast Refresh] done in 521ms
+[2026-03-22T00:24:52.712Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-03-22T00:24:53.241Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:24:53.501Z] [log] [Fast Refresh] done in 259ms
+[2026-03-22T00:24:53.864Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-03-22T00:24:54.124Z] [error] Warning: Extra attributes from the server: %s%s style 
+    at input
+    at div
+    at div
+    at ScenarioSlider (webpack-internal:///(app-pages-browser)/./src/app/scenarios/page.tsx:672:17)
+    at div
+    at div
+    at div
+    at main
+    at div
+    at AppShell (webpack-internal:///(app-pages-browser)/./src/components/layout/app-shell.tsx:67:11)
+    at ScenariosPage (webpack-internal:///(app-pages-browser)/./src/app/scenarios/page.tsx:30:82)
+    at ClientPageRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/client-page.js:14:11)
+    at InnerLayoutRouter (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:243:11)
+    at RedirectErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:74:9)
+    at RedirectBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:82:11)
+    at NotFoundBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:349:11)
+    at ErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/error-boundary.js:160:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at OuterLayoutRouter (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:370:11)
+    at InnerLayoutRouter (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:243:11)
+    at RedirectErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:74:9)
+    at RedirectBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:82:11)
+    at NotFoundErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/not-found-boundary.js:76:9)
+    at NotFoundBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:349:11)
+    at ErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/error-boundary.js:160:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at OuterLayoutRouter (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js:370:11)
+    at SWRConfig (webpack-internal:///(app-pages-browser)/./node_modules/swr/dist/_internal/config-context-12s-CCVTDPOP.mjs:556:13)
+    at Auth0Provider (webpack-internal:///(app-pages-browser)/./node_modules/@auth0/nextjs-auth0/dist/client/providers/auth0-provider.js:11:11)
+    at body
+    at html
+    at RootLayout (Server)
+    at RedirectErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:74:9)
+    at RedirectBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:82:11)
+    at NotFoundErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/not-found-boundary.js:76:9)
+    at NotFoundBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at DevRootNotFoundBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/dev-root-not-found-boundary.js:33:11)
+    at ReactDevOverlay (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/ReactDevOverlay.js:87:9)
+    at HotReload (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:321:11)
+    at Router (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/app-router.js:207:11)
+    at ErrorBoundaryHandler (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/error-boundary.js:113:9)
+    at ErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/error-boundary.js:160:11)
+    at AppRouter (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/app-router.js:585:13)
+    at ServerRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:112:27)
+    at Root (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:117:11)
+[2026-03-22T00:26:39.829Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:26:44.936Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:26:45.073Z] [log] [Fast Refresh] done in 171ms
+[2026-03-22T00:26:52.107Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-03-22T00:28:55.628Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-03-22T00:31:06.152Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:07.032Z] [log] [Fast Refresh] done in 890ms
+[2026-03-22T00:31:07.076Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:07.665Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-03-22T00:31:08.112Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-03-22T00:31:15.102Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:15.357Z] [log] [Fast Refresh] done in 255ms
+[2026-03-22T00:31:21.417Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:21.548Z] [log] [Fast Refresh] done in 130ms
+[2026-03-22T00:31:25.903Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:26.178Z] [log] [Fast Refresh] done in 274ms
+[2026-03-22T00:31:31.083Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:31.243Z] [log] [Fast Refresh] done in 157ms
+[2026-03-22T00:31:46.210Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:46.640Z] [log] [Fast Refresh] done in 430ms
+[2026-03-22T00:31:59.307Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:31:59.739Z] [log] [Fast Refresh] done in 429ms
+[2026-03-22T00:32:06.321Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:32:06.602Z] [log] [Fast Refresh] done in 280ms
+[2026-03-22T00:32:12.435Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:32:12.615Z] [log] [Fast Refresh] done in 180ms
+[2026-03-22T00:32:18.248Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:32:18.804Z] [log] [Fast Refresh] done in 531ms
+[2026-03-22T00:32:29.017Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:32:29.187Z] [log] [Fast Refresh] done in 169ms
+[2026-03-22T00:32:33.853Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:32:34.090Z] [log] [Fast Refresh] done in 237ms
+[2026-03-22T00:32:42.173Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:32:42.316Z] [log] [Fast Refresh] done in 143ms
+[2026-03-22T00:32:47.352Z] [log] [Fast Refresh] rebuilding
+[2026-03-22T00:32:47.515Z] [log] [Fast Refresh] done in 165ms
+[2026-03-22T00:33:29.188Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-22T00:33:29.190Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-22T00:33:29.190Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-22T00:33:29.190Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-22T00:33:29.190Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+[2026-03-22T00:33:29.190Z] [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
