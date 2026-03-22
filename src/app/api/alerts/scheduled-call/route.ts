@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { alertCall } from '@/scripts/alert-call';
+import { getAlertMessage } from '@/app/api/alerts/message/route';
 import { env } from '@/lib/env';
 import { badRequest, serverError } from '@/lib/errors';
 
 const CALL_DELAY_MS = 10_000;
-const FALLBACK_MESSAGE =
-  'Your business cash runway needs attention. ' +
-  'Please log in to your Runway dashboard to review your latest financial alerts.';
 
 // Keywords that signal severity level — checked against the message text
 const HEAVY_KEYWORDS = [
@@ -61,14 +59,7 @@ export async function POST(req: NextRequest) {
   await new Promise((resolve) => setTimeout(resolve, CALL_DELAY_MS));
 
   try {
-    // Fetch the message from the message API
-    const origin = req.nextUrl.origin;
-    const msgRes = await fetch(`${origin}/api/alerts/message`);
-    let message = FALLBACK_MESSAGE;
-    if (msgRes.ok) {
-      const msgBody = (await msgRes.json()) as { message?: string };
-      if (msgBody.message) message = msgBody.message;
-    }
+    const message = await getAlertMessage();
 
     // Pick voice based on message severity
     const severity = classifySeverity(message);

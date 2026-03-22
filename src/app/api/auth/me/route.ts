@@ -37,6 +37,7 @@ export async function GET() {
 
   // Fetch full profile from Auth0 Management API for user_metadata
   try {
+    console.log("[me] fetching Auth0 management token...");
     const tokenRes = await fetch(`https://${env.AUTH0_DOMAIN}/oauth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,26 +49,36 @@ export async function GET() {
       }),
     });
 
-    if (tokenRes.ok) {
+    if (!tokenRes.ok) {
+      const errBody = await tokenRes.text();
+      console.error("[me] Auth0 token request failed:", tokenRes.status, errBody);
+    } else {
       const { access_token } = (await tokenRes.json()) as { access_token: string };
+      console.log("[me] got management token, fetching user:", session.sub);
+
       const userRes = await fetch(
         `https://${env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(session.sub)}`,
         { headers: { Authorization: `Bearer ${access_token}` } }
       );
 
-      if (userRes.ok) {
+      if (!userRes.ok) {
+        const errBody = await userRes.text();
+        console.error("[me] Auth0 user fetch failed:", userRes.status, errBody);
+      } else {
         const user = (await userRes.json()) as {
           name?: string;
           user_metadata?: { name?: string; business_name?: string; phone?: string };
         };
+        console.log("[me] Auth0 user_metadata:", JSON.stringify(user.user_metadata));
+        console.log("[me] Auth0 user name:", user.name);
         const meta = user.user_metadata;
         if (meta?.phone) phone = meta.phone;
         if (meta?.business_name) businessName = meta.business_name;
         if (meta?.name) name = meta.name;
       }
     }
-  } catch {
-    // Fall through — use session-derived values
+  } catch (err) {
+    console.error("[me] Auth0 Management API error:", err);
   }
 
   return NextResponse.json({ name, businessName, phone });

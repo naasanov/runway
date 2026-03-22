@@ -9,7 +9,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { CircuitBackground } from "@/components/circuit-background";
 import { RunwayLogoIcon } from "@/components/runway-logo";
-import { Building2, CreditCard, Loader2, Plane, Zap } from "lucide-react";
+import { Building2, CreditCard, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -379,7 +379,7 @@ export default function ConnectPage() {
   function handleContinue() {
     if (!business) return;
     if (ownerPhone) {
-      void runwayApi.scheduleCall(ownerPhone);
+      void runwayApi.scheduleCall(ownerPhone).catch(() => null);
     }
     router.push(`/dashboard?b=${business.id}`);
   }

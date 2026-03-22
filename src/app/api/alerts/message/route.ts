@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 
+// TODO: Implement dynamic message generation based on financial data nick nick nick
+/** Generate the alert call message. Shared by the route and scheduled-call. */
+export async function getAlertMessage(): Promise<string> {
+  return (
+    'Your business cash runway needs attention. ' +
+    'Please log in to your Runway dashboard to review your latest financial alerts.'
+  );
+}
+
 /**
  * GET /api/alerts/message
  *
@@ -11,10 +20,6 @@ import { NextResponse } from 'next/server';
  *   200  { message: string }
  */
 export async function GET() {
-  // TODO: Implement dynamic message generation based on financial data nick nick nick
-  const message =
-    'Your business cash runway needs attention. ' +
-    'Please log in to your Runway dashboard to review your latest financial alerts.';
-
+  const message = await getAlertMessage();
   return NextResponse.json({ message });
 }
