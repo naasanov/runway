@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Syne, Instrument_Serif } from "next/font/google";
 import "./globals.css";
-import { Auth0Provider } from "@auth0/nextjs-auth0/client";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -42,7 +41,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <Auth0Provider>{children}</Auth0Provider>
+        {children}
       </body>
     </html>
   );

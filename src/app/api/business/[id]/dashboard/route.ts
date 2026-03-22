@@ -21,7 +21,7 @@ export async function GET(
   ] = await Promise.all([
     supabase
       .from("businesses")
-      .select("id, name, current_balance, runway_days, runway_severity")
+      .select("id, name, current_balance, runway_days, runway_severity, owner_phone")
       .eq("id", businessId)
       .single(),
     supabase.from("transactions").select("*").eq("business_id", businessId),
@@ -68,6 +68,7 @@ export async function GET(
       current_balance: business.current_balance,
       runway_days: business.runway_days,
       runway_severity: business.runway_severity,
+      owner_phone: business.owner_phone,
     },
     alerts: (alerts ?? []) as Alert[],
     forecast_summary: {

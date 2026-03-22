@@ -14,11 +14,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const DEFAULT_BUSINESS = {
-  business_name: "Sweet Grace Bakery",
-  business_type: "bakery",
-  owner_phone: "+19195551234",
-};
+const DEFAULT_BUSINESS_NAME = "Sweet Grace Bakery";
+const DEFAULT_BUSINESS_TYPE = "bakery";
 const POST_ANALYZE_RETRY_COUNT = 5;
 const POST_ANALYZE_RETRY_DELAY_MS = 400;
 const STREAM_REVEAL_DELAY_MS = 130;
@@ -107,6 +104,7 @@ export default function ConnectPage() {
   const queuedTransactionsRef = useRef<AnalyzeStreamTransaction[]>([]);
   const completionHandledRef = useRef(false);
 
+  const [ownerPhone, setOwnerPhone] = useState<string | null>(null);
   const [step, setStep] = useState<ConnectStep>("idle");
   const [launching, setLaunching] = useState(false);
   const [business, setBusiness] = useState<ConnectResponse["business"] | null>(
@@ -121,6 +119,10 @@ export default function ConnectPage() {
   const [streamStatus, setStreamStatus] = useState<string>(
     "Waiting to import transactions…"
   );
+
+  useEffect(() => {
+    void runwayApi.getMe().then((me) => setOwnerPhone(me.phone)).catch(() => null);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -289,7 +291,11 @@ export default function ConnectPage() {
       setStreamStatus("Importing transactions from connected accounts…");
       setStep("connecting");
 
-      const connectResponse = await runwayApi.connectBusiness(DEFAULT_BUSINESS);
+      const connectResponse = await runwayApi.connectBusiness({
+        business_name: DEFAULT_BUSINESS_NAME,
+        business_type: DEFAULT_BUSINESS_TYPE,
+        owner_phone: ownerPhone ?? "",
+      });
       setBusiness(connectResponse.business);
       setImportedCount(connectResponse.transactions_imported);
       setStep("analyzing");
@@ -391,7 +397,7 @@ export default function ConnectPage() {
                 {"// connect_business"}
               </p>
               <h1 className="text-2xl font-bold tracking-tight mb-2">
-                Connect {DEFAULT_BUSINESS.business_name}
+                Connect {DEFAULT_BUSINESS_NAME}
               </h1>
               <p className="text-muted-foreground text-sm mb-8 max-w-sm leading-relaxed">
                 We&apos;ll import your transaction history, categorize
