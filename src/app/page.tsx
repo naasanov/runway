@@ -48,10 +48,10 @@ export default function LandingPage() {
             <ArrowRight className="size-4" />
           </Link>
           <Link
-            href="/dashboard?demo=true"
+            href="/connect"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border text-foreground font-semibold hover:bg-muted transition-colors text-sm"
           >
-            View demo dashboard
+            View demo flow
           </Link>
         </div>
 

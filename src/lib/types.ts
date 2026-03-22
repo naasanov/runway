@@ -134,6 +134,12 @@ export interface MockBankingResponse {
   count: number;
 }
 
+export interface ConnectRequest {
+  business_name: string;
+  business_type: string;
+  owner_phone: string;
+}
+
 export interface ConnectResponse {
   business: Business;
   transactions_imported: number;

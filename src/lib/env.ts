@@ -7,7 +7,7 @@ const envSchema = z.object({
   AZURE_SMS_FROM_NUMBER: z.string(),
   NEXT_PUBLIC_SUPABASE_URL: z.string(),
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
-  NEXT_PUBLIC_BASE_URL: z.string().optional(),
+  NEXT_PUBLIC_BASE_URL: z.string(),
 });
 
 type Env = z.infer<typeof envSchema>;

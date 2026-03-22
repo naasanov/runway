@@ -2,50 +2,127 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plane, Zap, Building2, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { Building2, CreditCard, Plane, Zap } from "lucide-react";
+import { ApiError, runwayApi } from "@/lib/api";
+import type { ConnectResponse, Transaction } from "@/lib/types";
 
-const DEMO_BUSINESS_ID = "sweet-grace-bakery";
+const DEFAULT_BUSINESS = {
+  business_name: "Sweet Grace Bakery",
+  business_type: "bakery",
+  owner_phone: "+19195551234",
+};
 
-const STREAM_LINES = [
-  { label: "$847 — Wedding cake (Stripe)", delay: 300 },
-  { label: "$2,400 — Rent (Banking)", delay: 700 },
-  { label: "$312 — King Arthur Flour (Stripe)", delay: 1100 },
-  { label: "$1,890 — Payroll (Banking)", delay: 1500 },
-  { label: "$135 — Packaging supplies (Stripe)", delay: 1900 },
-  { label: "$60 — Square POS subscription (Stripe)", delay: 2300 },
-  { label: "$89 — Acuity Scheduling (Stripe)", delay: 2700 },
-  { label: "$45 — Calendly (Stripe)", delay: 3100 },
-  { label: "$1,200 — Insurance (Banking)", delay: 3500 },
-  { label: "$3,200 — Durham Catering invoice [UNPAID]", delay: 3900, danger: true },
-];
+function getStreamLines(transactions: Transaction[]): Transaction[] {
+  return [...transactions]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 10);
+}
+
+function formatAmount(amount: number): string {
+  const absAmount = Math.abs(amount);
+  return `$${absAmount.toLocaleString()}`;
+}
+
+function formatStreamLabel(transaction: Transaction): string {
+  const status =
+    transaction.invoice_status === "unpaid" ? " [UNPAID]" : "";
+
+  return `${formatAmount(transaction.amount)} — ${transaction.description} (${transaction.source})${status}`;
+}
 
 export default function ConnectPage() {
   const router = useRouter();
   const [step, setStep] = useState<"idle" | "connecting" | "done">("idle");
   const [visibleLines, setVisibleLines] = useState<number[]>([]);
+  const [business, setBusiness] = useState<ConnectResponse["business"] | null>(null);
+  const [streamLines, setStreamLines] = useState<Transaction[]>([]);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [importedCount, setImportedCount] = useState(0);
 
-  function handleConnect() {
-    setStep("connecting");
+  async function handleConnect() {
+    try {
+      setError(null);
+      setWarning(null);
+      setVisibleLines([]);
+      setStep("connecting");
 
-    STREAM_LINES.forEach((line, i) => {
-      setTimeout(() => {
-        setVisibleLines((prev) => [...prev, i]);
-      }, line.delay);
-    });
+      const connectResponse = await runwayApi.connectBusiness(DEFAULT_BUSINESS);
+      setBusiness(connectResponse.business);
+      setImportedCount(connectResponse.transactions_imported);
 
-    setTimeout(() => {
-      setStep("done");
-    }, 4800);
+      const dashboardData = await runwayApi.getDashboard(connectResponse.business.id);
+      const alertData = await runwayApi.getAlerts(connectResponse.business.id);
+
+      const lines = getStreamLines([
+        ...dashboardData.forecast_summary.days.flatMap((day) =>
+          day.obligations.map<Transaction>((obligation, index) => ({
+            id: `${day.date}-${obligation.description}-${index}`,
+            business_id: connectResponse.business.id,
+            source: "banking",
+            transaction_type: "debit",
+            invoice_status: null,
+            invoice_date: null,
+            customer_id: null,
+            amount: -obligation.amount,
+            description: obligation.description,
+            category: null,
+            date: day.date,
+            is_recurring: true,
+            recurrence_pattern: null,
+            tags: [],
+          }))
+        ),
+      ]);
+
+      setStreamLines(lines);
+
+      lines.forEach((_line, index) => {
+        window.setTimeout(() => {
+          setVisibleLines((current) => [...current, index]);
+        }, 250 * (index + 1));
+      });
+
+      try {
+        const analyzeResponse = await runwayApi.analyzeBusiness(connectResponse.business.id);
+        const overdueInvoiceAlert = analyzeResponse.alerts_created.find(
+          (alert) => alert.scenario === "overdue_invoice"
+        );
+        setWarning(overdueInvoiceAlert?.headline ?? null);
+      } catch (analyzeError) {
+        const fallbackWarning = alertData.alerts.find(
+          (alert) => alert.scenario === "overdue_invoice"
+        );
+        setWarning(
+          fallbackWarning?.headline ?? "Imported data successfully. Analysis is still pending."
+        );
+      }
+
+      window.setTimeout(() => {
+        setStep("done");
+      }, Math.max(lines.length, 1) * 250 + 300);
+    } catch (connectError) {
+      setStep("idle");
+      setVisibleLines([]);
+      setBusiness(null);
+      setStreamLines([]);
+      setWarning(null);
+      setError(
+        connectError instanceof ApiError
+          ? connectError.message
+          : "We couldn't connect the business right now."
+      );
+    }
   }
 
   function handleContinue() {
-    router.push(`/dashboard?b=${DEMO_BUSINESS_ID}`);
+    if (!business) return;
+    router.push(`/dashboard?b=${business.id}`);
   }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Nav */}
       <nav className="border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-2 font-semibold">
           <Link href="/" className="flex items-center gap-2">
@@ -62,13 +139,13 @@ export default function ConnectPage() {
               <div className="size-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
                 <Building2 className="size-6 text-foreground" />
               </div>
-              <h1 className="text-2xl font-bold mb-2">Connect Sweet Grace Bakery</h1>
+              <h1 className="text-2xl font-bold mb-2">Connect {DEFAULT_BUSINESS.business_name}</h1>
               <p className="text-muted-foreground text-sm mb-8 max-w-sm mx-auto">
-                We&apos;ll pull your transaction history from Stripe and your bank to
-                build your cash flow forecast.
+                We&apos;ll import your seeded demo business, then load alerts and runway data
+                from the backend routes defined in the TDD.
               </p>
 
-              <div className="flex flex-col gap-3 mb-8">
+              <div className="flex flex-col gap-3 mb-6">
                 <button
                   onClick={handleConnect}
                   className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border border-border bg-card hover:bg-muted transition-colors text-left"
@@ -79,7 +156,7 @@ export default function ConnectPage() {
                   <div>
                     <p className="font-medium text-sm">Connect Stripe</p>
                     <p className="text-xs text-muted-foreground">
-                      Pull payment + invoice data
+                      Calls `POST /api/business/connect`
                     </p>
                   </div>
                   <Zap className="size-4 text-muted-foreground ml-auto" />
@@ -95,16 +172,16 @@ export default function ConnectPage() {
                   <div>
                     <p className="font-medium text-sm">Connect Bank Account</p>
                     <p className="text-xs text-muted-foreground">
-                      Pull balance + ACH / wire transfers
+                      Loads dashboard and alert data from the API
                     </p>
                   </div>
                   <Zap className="size-4 text-muted-foreground ml-auto" />
                 </button>
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                Demo mode — using seeded data for Sweet Grace Bakery, Durham NC
-              </p>
+              {error && (
+                <p className="text-sm text-red-600">{error}</p>
+              )}
             </div>
           )}
 
@@ -112,16 +189,20 @@ export default function ConnectPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <div
-                  className={`size-2 rounded-full ${step === "done" ? "bg-green-500" : "bg-amber-400 animate-pulse"}`}
+                  className={`size-2 rounded-full ${
+                    step === "done" ? "bg-green-500" : "bg-amber-400 animate-pulse"
+                  }`}
                 />
                 <p className="text-sm font-medium">
                   {step === "done"
-                    ? "Import complete — 4 months of data"
+                    ? `Import complete — ${importedCount} live items loaded`
                     : "Importing transaction history…"}
                 </p>
               </div>
               <p className="text-xs text-muted-foreground mb-5 pl-4">
-                Stripe + First Citizens Bank · Sweet Grace Bakery
+                {business
+                  ? `Stripe + banking connected for ${business.name}`
+                  : "Connecting demo business"}
               </p>
 
               <div className="rounded-xl border border-border bg-card font-mono text-xs overflow-hidden">
@@ -129,14 +210,18 @@ export default function ConnectPage() {
                   Transaction stream
                 </div>
                 <div className="p-4 space-y-1.5 min-h-[200px]">
-                  {STREAM_LINES.map((line, i) =>
-                    visibleLines.includes(i) ? (
+                  {streamLines.map((line, index) =>
+                    visibleLines.includes(index) ? (
                       <div
-                        key={i}
-                        className={`flex items-center gap-2 ${line.danger ? "text-red-600 font-semibold" : "text-foreground"}`}
+                        key={line.id}
+                        className={`flex items-center gap-2 ${
+                          line.invoice_status === "unpaid"
+                            ? "text-red-600 font-semibold"
+                            : "text-foreground"
+                        }`}
                       >
                         <span className="text-muted-foreground">→</span>
-                        {line.label}
+                        {formatStreamLabel(line)}
                       </div>
                     ) : null
                   )}
@@ -149,12 +234,14 @@ export default function ConnectPage() {
                 </div>
               </div>
 
-              {step === "done" && (
+              {warning && (
+                <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  <strong>Heads up:</strong> {warning}
+                </div>
+              )}
+
+              {step === "done" && business && (
                 <div className="mt-6">
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 p-4 mb-4 text-sm text-amber-800 dark:text-amber-300">
-                    <strong>Heads up:</strong> We detected a $3,200 invoice from Durham
-                    Catering that&apos;s 12 days overdue. Running analysis…
-                  </div>
                   <button
                     onClick={handleContinue}
                     className="w-full py-3 rounded-xl bg-foreground text-background font-semibold text-sm hover:bg-foreground/80 transition-colors"

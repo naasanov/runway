@@ -1,159 +1,244 @@
+"use client";
+
 import { Nav } from "@/components/nav";
-import {
-  AlertTriangle,
-  Calendar,
-  TrendingDown,
-  Zap,
-} from "lucide-react";
+import { ApiError, runwayApi } from "@/lib/api";
+import type {
+  DashboardResponse,
+  RecommendedAction,
+  Severity,
+} from "@/lib/types";
+import { format, parseISO } from "date-fns";
+import { AlertTriangle, Calendar, TrendingDown, Zap } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
-const UPCOMING = [
-  { label: "Payroll", date: "Mar 28", amount: 3800, danger: true },
-  { label: "Insurance", date: "Mar 28", amount: 1200, danger: true },
-  { label: "Rent", date: "Apr 1", amount: 2400, danger: false },
-];
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 
-const ALERTS = [
-  {
-    severity: "red" as const,
-    headline: "You may miss payroll in 9 days.",
-    detail: "Projected shortfall of $2,200 by March 28 without intervention.",
-  },
-  {
-    severity: "amber" as const,
-    headline: "Durham Catering invoice is 12 days overdue.",
-    detail: "Collecting $3,200 would fully cover the expected shortfall.",
-  },
-  {
-    severity: "amber" as const,
-    headline: "Duplicate scheduling subscriptions detected.",
-    detail: "Cancel one tool to save roughly $1,068 per year.",
-  },
-  {
-    severity: "red" as const,
-    headline: "Revenue concentration risk is high.",
-    detail: "Over 60% of trailing revenue comes from one customer.",
-  },
-];
-
-const ACTIONS = [
-  {
-    action: "Collect Durham Catering invoice ($3,200)",
-    impact: "Covers projected payroll shortfall and adds cushion.",
-    cta: "Send reminder",
-  },
-  {
-    action: "Cancel one scheduling tool",
-    impact: "Saves around $89/month in recurring spend.",
-    cta: "Review tools",
-  },
-  {
-    action: "Delay next flour payment by 5 days",
-    impact: "Helps bridge the payroll + insurance overlap week.",
-  },
-];
+function severityText(severity: Severity | null): string {
+  if (severity === "red") return "text-red-700 bg-red-50 border-red-200";
+  if (severity === "amber")
+    return "text-amber-700 bg-amber-50 border-amber-200";
+  return "text-green-700 bg-green-50 border-green-200";
+}
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get("b");
+  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!businessId) {
+      router.replace("/connect");
+      return;
+    }
+
+    const selectedBusinessId = businessId;
+    let cancelled = false;
+
+    async function loadDashboard() {
+      try {
+        setError(null);
+        const response = await runwayApi.getDashboard(selectedBusinessId);
+        if (!cancelled) {
+          setData(response);
+        }
+      } catch (dashboardError) {
+        if (!cancelled) {
+          setError(
+            dashboardError instanceof ApiError
+              ? dashboardError.message
+              : "We couldn't load the dashboard."
+          );
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [businessId, router]);
+
+  const headlineAlert = useMemo(
+    () =>
+      data?.alerts.find((alert) => alert.severity === "red") ??
+      data?.alerts[0] ??
+      null,
+    [data]
+  );
+
+  const recommendedActions = useMemo<RecommendedAction[]>(
+    () =>
+      data?.alerts.flatMap((alert) => alert.recommended_actions).slice(0, 4) ??
+      [],
+    [data]
+  );
+
+  if (!businessId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="max-w-3xl mx-auto px-6 py-16">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <p className="font-medium">No business selected.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Connect a business first so we know which dashboard to load.
+            </p>
+            <Link
+              href="/connect"
+              className="inline-flex mt-4 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium"
+            >
+              Go to connect
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background pb-mobile-nav">
+        <Nav businessId={businessId} />
+        <main className="max-w-6xl mx-auto px-6 py-8">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
+            {error}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-background pb-mobile-nav">
+        <Nav businessId={businessId} />
+        <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+          <div className="h-20 rounded-2xl bg-muted animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-72 rounded-xl bg-muted animate-pulse" />
+            <div className="h-72 rounded-xl bg-muted animate-pulse" />
+          </div>
+          <div className="h-48 rounded-xl bg-muted animate-pulse" />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-mobile-nav">
-      <Nav businessId="sweet-grace-bakery" />
+      <Nav businessId={businessId} />
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Page header */}
         <header>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Sweet Grace Bakery · Cash flow overview</p>
+          <p className="text-sm text-muted-foreground">
+            {data.business.name} · Cash flow overview
+          </p>
         </header>
 
-        {/* Headline metric */}
-        <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20 p-6">
-          <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-1">
-            Cash Runway
+        <section
+          className={`rounded-2xl border p-6 ${severityText(
+            data.business.runway_severity
+          )}`}
+        >
+          <p className="text-sm font-medium mb-1">Cash Runway</p>
+          <p className="text-5xl font-bold mb-2">
+            {data.business.runway_days ?? 0} days
           </p>
-          <p className="text-5xl font-bold text-red-700 dark:text-red-300 mb-2">
-            9 days
+          <p className="font-semibold text-lg max-w-prose">
+            {headlineAlert?.headline ?? "No active alerts."}
           </p>
-          <p className="text-red-800 dark:text-red-200 font-semibold text-lg max-w-prose">
-            You will miss payroll on March 28th.
-          </p>
-          <p className="text-sm text-red-700/70 dark:text-red-300/70 mt-1 max-w-prose">
-            Current balance: $4,200 · Projected shortfall: $2,200
+          <p className="text-sm mt-1 max-w-prose">
+            Current balance: {formatCurrency(data.business.current_balance)}
+            {data.forecast_summary.min_projected_balance < 0
+              ? ` · Lowest projected balance: ${formatCurrency(
+                  data.forecast_summary.min_projected_balance
+                )}`
+              : ""}
           </p>
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Cash forecast chart placeholder */}
           <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <TrendingDown className="size-4" />
-                  30-Day Cash Forecast
-                </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Projected balance day-by-day
-                </p>
-              </div>
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <TrendingDown className="size-4" />
+                {data.forecast_summary.horizon_days}-Day Cash Forecast
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Projected balance day-by-day from `GET
+                /api/business/:id/dashboard`
+              </p>
             </div>
-            {/* Simple cash flow visualization */}
-            <div className="h-48 relative">
-              <svg className="w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
-                {/* Grid lines */}
-                <line x1="0" y1="75" x2="400" y2="75" stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4" />
-                <line x1="0" y1="37.5" x2="400" y2="37.5" stroke="currentColor" strokeOpacity="0.05" strokeDasharray="4" />
-                <line x1="0" y1="112.5" x2="400" y2="112.5" stroke="currentColor" strokeOpacity="0.05" strokeDasharray="4" />
 
-                {/* Danger zone */}
-                <rect x="0" y="100" width="400" height="50" fill="rgb(239 68 68)" fillOpacity="0.1" />
-
-                {/* Cash flow line */}
-                <path
-                  d="M 0,30 Q 50,25 100,35 T 200,50 T 300,90 T 350,110 L 400,130"
-                  fill="none"
-                  stroke="rgb(239 68 68)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-
-                {/* Data points */}
-                <circle cx="0" cy="30" r="4" fill="rgb(34 197 94)" />
-                <circle cx="100" cy="35" r="4" fill="rgb(34 197 94)" />
-                <circle cx="200" cy="50" r="4" fill="rgb(234 179 8)" />
-                <circle cx="300" cy="90" r="4" fill="rgb(234 179 8)" />
-                <circle cx="350" cy="110" r="4" fill="rgb(239 68 68)" />
-              </svg>
-
-              {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[10px] text-muted-foreground py-1">
-                <span>$8k</span>
-                <span>$4k</span>
-                <span className="text-red-500">$0</span>
-              </div>
-
-              {/* X-axis labels */}
-              <div className="absolute bottom-0 left-8 right-0 flex justify-between text-[10px] text-muted-foreground">
-                <span>Today</span>
-                <span>Week 2</span>
-                <span>Week 3</span>
-                <span className="text-red-500">Mar 28</span>
-              </div>
+            <div className="space-y-3">
+              {data.forecast_summary.days.slice(0, 8).map((day) => (
+                <div
+                  key={day.date}
+                  className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {format(parseISO(day.date), "MMM d")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Revenue {formatCurrency(day.expected_revenue)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className={`font-semibold ${
+                        day.is_danger ? "text-red-600" : "text-foreground"
+                      }`}
+                    >
+                      {formatCurrency(day.projected_balance)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {day.obligations.length
+                        ? `${day.obligations.length} obligations`
+                        : "No obligations"}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Upcoming obligations */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
               <Calendar className="size-4" />
               Upcoming Obligations
             </h2>
             <div className="space-y-3">
-              {UPCOMING.map((item) => (
-                <div key={item.label} className="flex items-center justify-between text-sm">
+              {data.upcoming_obligations.map((item) => (
+                <div
+                  key={`${item.description}-${item.due_date}`}
+                  className="flex items-center justify-between text-sm"
+                >
                   <div>
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.date}</p>
+                    <p className="font-medium">{item.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(parseISO(item.due_date), "MMM d")}
+                    </p>
                   </div>
-                  <span className={`font-semibold tabular-nums ${item.danger ? "text-red-600" : ""}`}>
-                    ${item.amount.toLocaleString()}
+                  <span
+                    className={`font-semibold tabular-nums ${
+                      data.forecast_summary.danger_dates.includes(item.due_date)
+                        ? "text-red-600"
+                        : ""
+                    }`}
+                  >
+                    {formatCurrency(item.amount)}
                   </span>
                 </div>
               ))}
@@ -161,43 +246,49 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Active alerts */}
         <section>
           <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
             <AlertTriangle className="size-4" />
             Active Alerts
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {ALERTS.map((alert) => (
-              <AlertCard key={alert.headline} {...alert} />
+            {data.alerts.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                severity={alert.severity}
+                headline={alert.headline}
+                detail={alert.detail}
+              />
             ))}
           </div>
         </section>
 
-        {/* Recommended actions */}
         <section>
           <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
             <Zap className="size-4" />
             Recommended Actions
           </h2>
           <div className="space-y-3">
-            {ACTIONS.map((action, i) => (
+            {recommendedActions.map((action, index) => (
               <div
-                key={i}
+                key={`${action.action}-${index}`}
                 className="flex items-start gap-4 rounded-xl border border-border bg-card p-4"
               >
                 <span className="size-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                  {i + 1}
+                  {index + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{action.action}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{action.impact}</p>
+                  <p className="text-sm font-medium">
+                    {action.action}
+                    {action.target ? ` · ${action.target}` : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {action.impact}
+                  </p>
                 </div>
-                {action.cta && (
-                  <button className="shrink-0 text-xs px-4 py-2.5 min-h-[44px] rounded-lg border border-border hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                    {action.cta}
-                  </button>
-                )}
+                <div className="shrink-0 text-xs font-medium text-muted-foreground">
+                  {formatCurrency(action.amount)}
+                </div>
               </div>
             ))}
           </div>
@@ -212,14 +303,14 @@ function AlertCard({
   headline,
   detail,
 }: {
-  severity: "red" | "amber" | "green";
+  severity: Severity;
   headline: string;
   detail: string;
 }) {
   const colors = {
-    red: "border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20",
-    amber: "border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20",
-    green: "border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20",
+    red: "border-red-200 bg-red-50",
+    amber: "border-amber-200 bg-amber-50",
+    green: "border-green-200 bg-green-50",
   };
   const dotColors = {
     red: "bg-red-500",
@@ -230,10 +321,16 @@ function AlertCard({
   const isRed = severity === "red";
 
   return (
-    <div className={`rounded-xl border p-4 ${colors[severity]} ${isRed ? "ring-1 ring-red-300 dark:ring-red-800" : ""}`}>
+    <div
+      className={`rounded-xl border p-4 ${colors[severity]} ${isRed ? "ring-1 ring-red-300" : ""}`}
+    >
       <div className="flex items-center gap-2.5 mb-1.5">
-        <span className={`size-3 rounded-full ${dotColors[severity]} ${isRed ? "animate-pulse" : ""}`} />
-        <p className={`font-semibold ${isRed ? "text-base" : "text-sm"}`}>{headline}</p>
+        <span
+          className={`size-3 rounded-full ${dotColors[severity]} ${isRed ? "animate-pulse" : ""}`}
+        />
+        <p className={`font-semibold ${isRed ? "text-base" : "text-sm"}`}>
+          {headline}
+        </p>
       </div>
       <p className="text-sm text-muted-foreground pl-5 max-w-prose">{detail}</p>
     </div>
