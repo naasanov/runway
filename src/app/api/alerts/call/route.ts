@@ -6,7 +6,8 @@ import { badRequest, serverError } from '@/lib/errors';
  * POST /api/alerts/call
  *
  * Triggers an automated phone call using ElevenLabs TTS + Twilio.
- * The message is synthesized to audio, hosted temporarily, and played to the recipient.
+ * The message is synthesized to audio, uploaded to Supabase Storage,
+ * and played to the recipient via a signed URL.
  *
  * Request body:
  *   message  {string}  Required. The text to speak during the call.
@@ -19,8 +20,8 @@ import { badRequest, serverError } from '@/lib/errors';
  *   400  { error, code: "MISSING_MESSAGE" }
  *   500  { error, code: "CALL_FAILED" }
  *
- * Note: Requires NEXT_PUBLIC_BASE_URL to be set to the publicly reachable
- * app URL so Twilio can fetch the generated audio file.
+ * Note: Requires SUPABASE_ALERT_AUDIO_BUCKET to point at a bucket the server
+ * can upload into so Twilio can fetch the generated audio file via signed URL.
  */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);

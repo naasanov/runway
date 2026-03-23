@@ -7,6 +7,7 @@ const envSchema = z.object({
   AZURE_SMS_FROM_NUMBER: z.string(),
   NEXT_PUBLIC_SUPABASE_URL: z.string(),
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
+  SUPABASE_ALERT_AUDIO_BUCKET: z.string(),
   NEXT_PUBLIC_BASE_URL: z.string().optional(),
   ELEVENLABS_API_KEY: z.string(),
   ELEVENLABS_VOICE_ID: z.string().default("21m00Tcm4TlvDq8ikWAM"),

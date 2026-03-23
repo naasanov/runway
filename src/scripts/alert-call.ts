@@ -1,32 +1,21 @@
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import twilio from 'twilio';
+import { env } from '@/lib/env';
+import { supabase } from '@/lib/supabase';
 
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID!;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN!;
-const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER!;
-const ALERT_PHONE_NUMBER = process.env.ALERT_PHONE_NUMBER!;
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY!;
-const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
-const PUBLIC_BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL)!;
+const AUDIO_BUCKET = env.SUPABASE_ALERT_AUDIO_BUCKET;
 
-const AUDIO_DIR = path.join(process.cwd(), 'public', 'tmp_audio');
-
-async function generateSpeech(message: string, voiceId?: string): Promise<string> {
+async function generateSpeech(message: string, voiceId?: string): Promise<Buffer> {
   console.log(`🎙  Generating speech...`);
 
   const fullText = `Automated message from Runway: ${message}.`;
-  const voice = voiceId || ELEVENLABS_VOICE_ID;
+  const voice = voiceId || env.ELEVENLABS_VOICE_ID;
 
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voice}`,
     {
       method: 'POST',
       headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
+        'xi-api-key': env.ELEVENLABS_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -42,21 +31,45 @@ async function generateSpeech(message: string, voiceId?: string): Promise<string
     throw new Error(`ElevenLabs error: ${response.status} ${err}`);
   }
 
-  fs.mkdirSync(AUDIO_DIR, { recursive: true });
-  const filename = `alert-${Date.now()}.mp3`;
-  const buffer = Buffer.from(await response.arrayBuffer());
-  fs.writeFileSync(path.join(AUDIO_DIR, filename), buffer);
+  return Buffer.from(await response.arrayBuffer());
+}
 
-  console.log(`✅ Audio saved: ${filename}`);
-  return filename;
+async function uploadAudio(buffer: Buffer): Promise<{ path: string; url: string }> {
+  const filename = `alert-${Date.now()}-${crypto.randomUUID()}.mp3`;
+  const filePath = `calls/${filename}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(AUDIO_BUCKET)
+    .upload(filePath, buffer, {
+      contentType: 'audio/mpeg',
+      cacheControl: '600',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(`Supabase upload failed: ${uploadError.message}`);
+  }
+
+  const { data, error: signedUrlError } = await supabase.storage
+    .from(AUDIO_BUCKET)
+    .createSignedUrl(filePath, 60 * 15);
+
+  if (signedUrlError || !data?.signedUrl) {
+    throw new Error(
+      `Supabase signed URL failed: ${signedUrlError?.message || 'Missing signed URL'}`
+    );
+  }
+
+  console.log(`✅ Audio uploaded: ${filePath}`);
+  return { path: filePath, url: data.signedUrl };
 }
 
 export async function alertCall(message: string, toNumber?: string, voiceId?: string): Promise<void> {
-  const to = toNumber || ALERT_PHONE_NUMBER;
-  const filename = await generateSpeech(message, voiceId);
-  const audioUrl = `${PUBLIC_BASE_URL}/tmp_audio/${filename}`;
+  const to = toNumber || env.ALERT_PHONE_NUMBER;
+  const audioBuffer = await generateSpeech(message, voiceId);
+  const { path: audioPath, url: audioUrl } = await uploadAudio(audioBuffer);
 
-  const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+  const client = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -64,32 +77,31 @@ export async function alertCall(message: string, toNumber?: string, voiceId?: st
   <Play loop="2">${audioUrl}</Play>
 </Response>`;
 
-  // Verify the audio URL is reachable before placing the call
-  const check = await fetch(audioUrl, { method: 'HEAD' });
-  if (!check.ok) {
-    throw new Error(`Audio URL not reachable (${check.status}): ${audioUrl}\nIs Next.js running with ngrok on the right port?`);
-  }
-
   console.log(`📞 Calling ${to}...`);
   console.log(`   Audio URL: ${audioUrl}`);
 
   const call = await client.calls.create({
     to,
-    from: TWILIO_FROM_NUMBER,
+    from: env.TWILIO_FROM_NUMBER,
     twiml,
     machineDetection: 'DetectMessageEnd',
   });
 
   console.log(`✅ Call initiated! SID: ${call.sid} | Status: ${call.status}`);
 
-  // Delete the file after 120s — enough time for Twilio to fetch and play it
-  setTimeout(() => {
-    fs.rmSync(path.join(AUDIO_DIR, filename), { force: true });
-    console.log(`🗑  Deleted ${filename}`);
-  }, 120_000).unref();
+  // Best-effort cleanup after Twilio has had time to fetch the recording.
+  const cleanupTimer = setTimeout(async () => {
+    const { error } = await supabase.storage.from(AUDIO_BUCKET).remove([audioPath]);
+    if (error) {
+      console.error(`Failed to delete uploaded audio ${audioPath}:`, error.message);
+      return;
+    }
+    console.log(`🗑  Deleted ${audioPath}`);
+  }, 120_000);
+  cleanupTimer.unref?.();
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (typeof require !== 'undefined' && require.main === module) {
   const message = process.argv[2] || 'Warning. Server alert triggered. Please check your systems immediately.';
   alertCall(message).catch((err) => {
     console.error('❌ Alert failed:', err);
