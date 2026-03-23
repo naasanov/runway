@@ -103,7 +103,6 @@ export async function alertCall(message: string, toNumber?: string, voiceId?: st
     to,
     from: env.TWILIO_FROM_NUMBER,
     twiml,
-    machineDetection: 'DetectMessageEnd',
   });
 
   console.log(`✅ Call initiated! SID: ${call.sid} | Status: ${call.status}`);
