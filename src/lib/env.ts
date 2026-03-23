@@ -21,6 +21,7 @@ const envSchema = z.object({
   AUTH0_DOMAIN: z.string(),
   AUTH0_CLIENT_ID: z.string(),
   AUTH0_CLIENT_SECRET: z.string(),
+  FALLBACK_AUDIO_URL: z.string().url().optional(),
 });
 
 type Env = z.infer<typeof envSchema>;

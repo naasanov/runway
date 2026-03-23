@@ -66,19 +66,38 @@ async function uploadAudio(buffer: Buffer): Promise<{ path: string; url: string 
 
 export async function alertCall(message: string, toNumber?: string, voiceId?: string): Promise<void> {
   const to = toNumber || env.ALERT_PHONE_NUMBER;
-  const audioBuffer = await generateSpeech(message, voiceId);
-  const { path: audioPath, url: audioUrl } = await uploadAudio(audioBuffer);
-
   const client = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
 
-  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+  let twiml: string;
+  let audioPath: string | null = null;
+
+  try {
+    const audioBuffer = await generateSpeech(message, voiceId);
+    const { path, url: audioUrl } = await uploadAudio(audioBuffer);
+    audioPath = path;
+    console.log(`   Audio URL: ${audioUrl}`);
+    twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Pause length="2"/>
   <Play loop="2">${audioUrl}</Play>
 </Response>`;
+  } catch (err) {
+    console.error('⚠️  Audio generation failed, using fallback:', err);
+    const fallbackUrl = env.FALLBACK_AUDIO_URL;
+    twiml = fallbackUrl
+      ? `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Pause length="2"/>
+  <Play loop="2">${fallbackUrl}</Play>
+</Response>`
+      : `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Pause length="2"/>
+  <Say loop="2">Automated message from Runway: ${message}</Say>
+</Response>`;
+  }
 
   console.log(`📞 Calling ${to}...`);
-  console.log(`   Audio URL: ${audioUrl}`);
 
   const call = await client.calls.create({
     to,
@@ -89,16 +108,19 @@ export async function alertCall(message: string, toNumber?: string, voiceId?: st
 
   console.log(`✅ Call initiated! SID: ${call.sid} | Status: ${call.status}`);
 
-  // Best-effort cleanup after Twilio has had time to fetch the recording.
-  const cleanupTimer = setTimeout(async () => {
-    const { error } = await supabase.storage.from(AUDIO_BUCKET).remove([audioPath]);
-    if (error) {
-      console.error(`Failed to delete uploaded audio ${audioPath}:`, error.message);
-      return;
-    }
-    console.log(`🗑  Deleted ${audioPath}`);
-  }, 120_000);
-  cleanupTimer.unref?.();
+  // Best-effort cleanup after Twilio has had time to fetch and play the recording.
+  // 10 minutes: accounts for machine detection (~30s) + voicemail greeting (~20s) + double play (~60s).
+  if (audioPath) {
+    const cleanupTimer = setTimeout(async () => {
+      const { error } = await supabase.storage.from(AUDIO_BUCKET).remove([audioPath!]);
+      if (error) {
+        console.error(`Failed to delete uploaded audio ${audioPath}:`, error.message);
+        return;
+      }
+      console.log(`🗑  Deleted ${audioPath}`);
+    }, 600_000);
+    cleanupTimer.unref?.();
+  }
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
