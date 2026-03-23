@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useRef, useState } from "react";
-import { TrendingDown, Bell, Zap, ArrowRight } from "lucide-react";
+import { TrendingDown, PhoneCall, Zap, ArrowRight } from "lucide-react";
 import { RunwayLogoIcon } from "@/components/runway-logo";
 import { useRouter } from "next/navigation";
 
@@ -62,7 +62,7 @@ export default function LandingPage() {
               </h1>
               <p className="mt-6 text-lg text-muted-foreground max-w-md leading-relaxed">
                 AI-powered cash flow intelligence for small business owners.
-                Plain-language alerts via text —{" "}
+                Voice alerts called directly to your phone —{" "}
                 <span className="font-semibold" style={{ color: GREEN }}>9 days before the crisis hits.</span>
               </p>
             </div>
@@ -134,9 +134,9 @@ export default function LandingPage() {
               accent
             />
             <FeatureCell
-              icon={<Bell className="size-5" />}
-              title="SMS Alerts"
-              body="Plain-language warnings sent to your phone the moment risk is detected. No dashboard required. No jargon. Just what you need to know."
+              icon={<PhoneCall className="size-5" />}
+              title="Voice Calls"
+              body="A custom AI voice calls you the moment risk is detected. No app required. No jargon. Just a clear, human-sounding alert delivered straight to your phone."
             />
             <FeatureCell
               icon={<Zap className="size-5" />}
