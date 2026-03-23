@@ -178,9 +178,8 @@ export default function ConnectPage() {
       if (revealTimerRef.current) {
         window.clearInterval(revealTimerRef.current);
       }
-      for (const timeoutId of Array.from(
-        rowAnimationTimeoutsRef.current.values()
-      )) {
+      const timeouts = rowAnimationTimeoutsRef.current;
+      for (const timeoutId of Array.from(timeouts.values())) {
         window.clearTimeout(timeoutId);
       }
     };

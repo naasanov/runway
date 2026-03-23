@@ -40,7 +40,7 @@ function Paths({ id }: { id: string }) {
           fy="0.5"
           gradientUnits="objectBoundingBox"
         >
-          {/* @ts-ignore — SVG SMIL */}
+          
           <animate
             attributeName="rx"
             values="0;0.62;0"
@@ -142,7 +142,6 @@ function AnalyzingPaths({ id }: { id: string }) {
           fy="0.5"
           gradientUnits="objectBoundingBox"
         >
-          {/* @ts-ignore — SVG SMIL */}
           <animate
             attributeName="rx"
             values="0;0.62;0"

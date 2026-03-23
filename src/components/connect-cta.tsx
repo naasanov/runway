@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 
-const GREEN = "#166534";
 
 export function ConnectCTA({
   label,
