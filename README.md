@@ -1,118 +1,120 @@
 # Runway
 
-***HACK DUKE 2026: Finance Track***
+> **🏆 MLH Best Use of ElevenLabs — HackDuke 2026**
 
-Nicolas Asanov, Abhimanyu Agashe, Vidur Shah, Arya Venkatesan
+***HackDuke 2026 · AI for Finance Track***
+
+**Nicolas Asanov · Abhimanyu Agashe · Vidur Shah · Arya Venkatesan**
+
 ---
 
-**AI-powered cash flow intelligence for small business owners.**  
-Runway connects to your business data, forecasts your cash position, and sends *plain‑language* alerts via SMS so you can act **before** a cash crunch hits.
+**AI-powered cash flow intelligence for small business owners.**
+Runway connects to your business data, forecasts your cash position, and calls you with a custom AI voice the moment a crisis is on the horizon — before it hits.
 
-> QuickBooks tells you what happened.  
-> **Runway tells you what’s about to happen.**
+> QuickBooks tells you what happened.
+> **Runway tells you what's about to happen.**
+
+---
 
 ## What it does
 
-- **Cash Flow Forecast**: Day-by-day projection of your cash position for the next 30/60/90 days, including the date you go negative.
-- **SMS Alerts**: Clear, actionable warnings sent to your phone (no dashboard required).
-- **Actionable Fixes**: Suggested next steps with impact (e.g., collect an invoice, delay a payment, cancel a subscription).
+- **Cash Flow Forecast** — day-by-day projection of your cash position for the next 30/60/90 days, flagging the exact date your balance goes negative
+- **AI Voice Call Alerts** — when risk is detected, Runway calls you using an ElevenLabs AI voice matched to the severity of the alert (light / medium / heavy) — no app required, no jargon
+- **AI Transaction Categorization** — Gemini AI categorizes every transaction, detects recurring obligations, and surfaces waste
+- **Actionable Fixes** — not just warnings; specific steps with dollar-amount impact (collect this invoice, cancel that subscription, delay this payment 5 days)
+- **Scenario Modeling** — model the impact of hypothetical changes (new hire, price increase, cut expense, delay payment) before committing
+
+---
 
 ## Tech stack
 
-- **Next.js** (App Router) + **React** + **TypeScript**
-- **Tailwind CSS**
-- **Supabase** (data/auth/storage depending on configuration)
-- **Auth0** (authentication)
-- **Gemini** (AI analysis)
-- **Azure Communication Services (SMS)** (text alerts)
-- **Jest** (tests)
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14 (App Router) + TypeScript |
+| Styling | Tailwind CSS + shadcn/ui |
+| Database & Storage | Supabase |
+| AI / Categorization | Google Gemini |
+| Voice TTS | **ElevenLabs** |
+| Phone Calls | Twilio |
+| SMS | Azure Communication Services |
+| Auth | Auth0 |
+| Charts | Recharts |
+| Tests | Jest |
+
+---
 
 ## Getting started
 
-### 1) Install dependencies
-
-This repo uses npm (includes `package-lock.json`):
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2) Configure environment variables
-
-Copy the template and fill in values:
+### 2. Configure environment variables
 
 ```bash
 cp .env.template .env.local
 ```
 
-Required variables (from `.env.template`):
+| Variable | Description |
+|---|---|
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `GEMINI_MODEL` | Gemini model name (e.g. `gemini-2.5-flash`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| `SUPABASE_ALERT_AUDIO_BUCKET` | Supabase storage bucket name for call audio |
+| `ELEVENLABS_API_KEY` | ElevenLabs API key |
+| `ELEVENLABS_VOICE_ID_LIGHT` | Voice ID for low-severity alerts |
+| `ELEVENLABS_VOICE_ID_MEDIUM` | Voice ID for medium-severity alerts |
+| `ELEVENLABS_VOICE_ID_HEAVY` | Voice ID for high-severity alerts |
+| `TWILIO_ACCOUNT_SID` | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token |
+| `TWILIO_FROM_NUMBER` | Twilio outbound phone number |
+| `ALERT_PHONE_NUMBER` | Default fallback number to call |
+| `FALLBACK_AUDIO_URL` | (Optional) Static backup MP3 URL if TTS generation fails |
+| `AUTH0_DOMAIN` | Auth0 domain |
+| `AUTH0_CLIENT_ID` | Auth0 client ID |
+| `AUTH0_CLIENT_SECRET` | Auth0 client secret |
+| `AZURE_COMMUNICATION_CONNECTION_STRING` | Azure SMS connection string |
+| `AZURE_SMS_FROM_NUMBER` | Azure SMS sender number |
 
-#### Supabase
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_BASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY` (server-only)
-
-#### Gemini AI
-- `GEMINI_API_KEY`
-- `GEMINI_MODEL` (default: `gemini-2.5-flash`)
-
-#### Azure Communication Services (SMS)
-- `AZURE_COMMUNICATION_CONNECTION_STRING`
-- `AZURE_SMS_FROM_NUMBER`
-
-#### Auth0
-- `AUTH0_SECRET`
-- `AUTH0_BASE_URL` (default: `http://localhost:3000`)
-- `AUTH0_ISSUER_BASE_URL`
-- `AUTH0_CLIENT_ID`
-- `AUTH0_CLIENT_SECRET`
-
-### 3) Run the app
+### 3. Run
 
 ```bash
 npm run dev
 ```
 
-Then open `http://localhost:3000`.
+Open `http://localhost:3000`.
+
+---
 
 ## Scripts
 
-- `npm run dev` — start Next.js dev server
-- `npm run build` — production build
-- `npm run start` — start production server
-- `npm run lint` — lint
-- `npm run format` — run Prettier on `src/**/*.{ts,tsx}`
-- `npm test` — run Jest tests
-- `npm run test:watch` — watch mode
+| Command | Description |
+|---|---|
+| `npm run dev` | Start Next.js dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Lint |
+| `npm run format` | Prettier on `src/**/*.{ts,tsx}` |
+| `npm test` | Run Jest tests |
+| `npm run test:watch` | Jest watch mode |
 
-## API (high level)
+---
 
-Routes live under `src/app/api`.
+## Project structure
 
-Currently discovered endpoints include:
-
-- `POST /api/actions/send-reminder`  
-  Returns a mocked “payment reminder” response (placeholder implementation).
-
-Example response shape:
-
-```json
-{
-  "sent": true,
-  "sent_at": "2026-03-21T18:32:00Z",
-  "to": "Durham Catering Co",
-  "subject": "Payment Reminder: Invoice #1021 — $3,200.00 overdue",
-  "message_preview": "Hi Durham Catering, this is a friendly reminder that Invoice #1021 for $3,200.00 is 12 days past due. Please remit payment at your earliest convenience."
-}
 ```
-
-## Project structure (partial)
-
-- `src/app` — Next.js App Router pages (landing, dashboard, login, signup, etc.)
-- `src/app/api` — API route handlers
-- `src/lib` — shared modules (env, API helpers, Supabase/Gemini/SMS clients, domain types)
-
-## Notes
-
-This project was built for **HackDuke 2026** (AI for Finance track).
+src/
+├── app/
+│   ├── api/          # API routes (alerts, auth, business, forecast, scenarios)
+│   ├── connect/      # Onboarding / data intake page
+│   ├── dashboard/    # Main dashboard
+│   ├── login/        # Auth0 login
+│   └── signup/       # Auth0 signup
+├── components/       # Shared UI components
+├── lib/              # Shared modules (env, supabase, gemini, api, types, etc.)
+├── scripts/          # Standalone scripts (alert-call.ts)
+└── __tests__/        # Jest test suite
+```
